@@ -381,6 +381,63 @@ app.post('/logout', async (req, res) => {
       });
     }
   });
+
+  // ✅ Update Video
+app.put("/api/video/:videoId", async (req, res) => {
+    try {
+      const { videoId } = req.params;
+      const { title, description, embedUrl, categoryId } = req.body;
+  
+      const updatedVideo = await prisma.video.update({
+        where: { videoId },
+        data: {
+          title,
+          description,
+          embedUrl,
+          videoCategoryId: categoryId,
+        },
+      });
+  
+      return res.status(200).json({
+        message: "Video updated successfully",
+        video: updatedVideo,
+      });
+    } catch (error) {
+      console.error("Error updating video:", error);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  });
+
+  app.put("/api/video/:videoId", async (req, res) => {
+    try {
+      const { videoId } = req.params;
+      const { title, description, hostName, episodeNumber, hostVideoLink} = req.body;
+  
+      const updatedVideo = await prisma.video.update({
+        where: { videoId },
+        data: {
+          title,
+          description,
+          hostName,
+          episodeNumber,
+          hostVideoLink,
+        },
+      });
+  
+      return res.status(200).json({
+        message: "✅ Video updated successfully",
+        video: updatedVideo,
+      });
+    } catch (error) {
+      console.error("Error updating video:", error);
+      return res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  });
+  
+  
   
   app.get("/api/shorts", async (req, res) => {
     try {
