@@ -384,7 +384,7 @@ app.post('/logout', async (req, res) => {
   
   app.get("/api/shorts", async (req, res) => {
     try {
-      const { shortCategoryId, page = 1, limit = 4 } = req.query;
+      const { shortCategoryId, page, limit } = req.query;
   
       const pageNumber = parseInt(page);
       const limitNumber = parseInt(limit);
