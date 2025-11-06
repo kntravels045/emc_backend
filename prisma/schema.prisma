@@ -60,8 +60,6 @@ model Video {
 
 model Short {
   shortId    String @unique @id @default(cuid())
-  title       String
-  thumbnail   String?
   videoLink   String
   shortCategoryId  String
   shortCategory   ShortCategory @relation(fields: [shortCategoryId], references: [shortCategoryId])

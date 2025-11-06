@@ -268,56 +268,56 @@ app.post('/logout', async (req, res) => {
     }
   });
 
-//   app.post("/api/add/shorts-video", async (req, res) => {
-//     try {
-//       const data = req.body;
+  app.post("/api/add/shorts-video", async (req, res) => {
+    try {
+      const data = req.body;
   
-//       const addShortsVideo = await prisma.short.create({
-//         data: {
-//           title: data.title,
-//           videoLink: data.videoLink,
-//           shortCategoryId: data.shortCategoryId, // keep naming consistent
-//         },
-//       });
+      const addShortsVideo = await prisma.short.create({
+        data: {
+          videoLink: data.videoLink,
+          shortCategoryId: data.shortCategoryId, // keep naming consistent
+        },
+      });
   
-//       return res.status(201).json({
-//         data: addShortsVideo,
-//         message: "Shorts video added successfully",
-//       });
-//     } catch (error) {
-//       console.error("Error adding shorts video:", error);
-//       return res.status(500).json({
-//         message: "Internal Server Error",
-//         error: error.message,
-//       });
-//     }
-//   });
+      return res.status(201).json({
+        message: "Shorts video added successfully",
+      });
+    } catch (error) {
+      console.error("Error adding shorts video:", error);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  });
 
-//   app.post("/api/add/episode-video", async (req, res) => {
-//     try {
-//       const data = req.body;
-//       const addEpisode = await prisma.video.create({
-//         data: {
-//             title          :data.title,
-//             description    :data.description,
-//             hostName       :data.hostName,
-//             episodeNumber  :data.episodeNumber,
-//             hostVideoLink  :data.hostVideoLink,
-//             videoCategoryId:data.videoCategoryId
-//         },
-//       });
-//       return res.status(201).json({
-//         data: addEpisode,
-//         message: "Episode video added successfully",
-//       });
-//     } catch (error) {
-//       console.error("Error adding shorts video:", error);
-//       return res.status(500).json({
-//         message: "Internal Server Error",
-//         error: error.message,
-//       });
-//     }
-//   });
+  app.post("/api/add/episode-video", async (req, res) => {
+    try {
+      const data = req.body;
+      const addEpisode = await prisma.video.create({
+        data: {
+            title          :data.title,
+            description    :data.description,
+            hostName       :data.hostName,
+            episodeNumber  :data.episodeNumber,
+            hostVideoLink  :data.hostVideoLink,
+            videoCategoryId:data.videoCategoryId
+        },
+      });
+      return res.status(201).json({
+        data: addEpisode,
+        message: "Episode video added successfully",
+      });
+    } catch (error) {
+      console.error("Error adding shorts video:", error);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  });
+
+
 
   app.get("/api/episode", async (req, res) => {
     try {
