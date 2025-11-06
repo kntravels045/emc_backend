@@ -268,56 +268,56 @@ app.post('/logout', async (req, res) => {
     }
   });
 
-  app.post("/api/add/shorts-video", async (req, res) => {
-    try {
-      const data = req.body;
+//   app.post("/api/add/shorts-video", async (req, res) => {
+//     try {
+//       const data = req.body;
   
-      const addShortsVideo = await prisma.short.create({
-        data: {
-          title: data.title,
-          videoLink: data.videoLink,
-          shortCategoryId: data.shortCategoryId, // keep naming consistent
-        },
-      });
+//       const addShortsVideo = await prisma.short.create({
+//         data: {
+//           title: data.title,
+//           videoLink: data.videoLink,
+//           shortCategoryId: data.shortCategoryId, // keep naming consistent
+//         },
+//       });
   
-      return res.status(201).json({
-        data: addShortsVideo,
-        message: "Shorts video added successfully",
-      });
-    } catch (error) {
-      console.error("Error adding shorts video:", error);
-      return res.status(500).json({
-        message: "Internal Server Error",
-        error: error.message,
-      });
-    }
-  });
+//       return res.status(201).json({
+//         data: addShortsVideo,
+//         message: "Shorts video added successfully",
+//       });
+//     } catch (error) {
+//       console.error("Error adding shorts video:", error);
+//       return res.status(500).json({
+//         message: "Internal Server Error",
+//         error: error.message,
+//       });
+//     }
+//   });
 
-  app.post("/api/add/episode-video", async (req, res) => {
-    try {
-      const data = req.body;
-      const addEpisode = await prisma.video.create({
-        data: {
-            title          :data.title,
-            description    :data.description,
-            hostName       :data.hostName,
-            episodeNumber  :data.episodeNumber,
-            hostVideoLink  :data.hostVideoLink,
-            videoCategoryId:data.videoCategoryId
-        },
-      });
-      return res.status(201).json({
-        data: addEpisode,
-        message: "Episode video added successfully",
-      });
-    } catch (error) {
-      console.error("Error adding shorts video:", error);
-      return res.status(500).json({
-        message: "Internal Server Error",
-        error: error.message,
-      });
-    }
-  });
+//   app.post("/api/add/episode-video", async (req, res) => {
+//     try {
+//       const data = req.body;
+//       const addEpisode = await prisma.video.create({
+//         data: {
+//             title          :data.title,
+//             description    :data.description,
+//             hostName       :data.hostName,
+//             episodeNumber  :data.episodeNumber,
+//             hostVideoLink  :data.hostVideoLink,
+//             videoCategoryId:data.videoCategoryId
+//         },
+//       });
+//       return res.status(201).json({
+//         data: addEpisode,
+//         message: "Episode video added successfully",
+//       });
+//     } catch (error) {
+//       console.error("Error adding shorts video:", error);
+//       return res.status(500).json({
+//         message: "Internal Server Error",
+//         error: error.message,
+//       });
+//     }
+//   });
 
   app.get("/api/episode", async (req, res) => {
     try {
@@ -386,23 +386,69 @@ app.post('/logout', async (req, res) => {
   
   app.get("/api/shorts", async (req, res) => {
     try {
-      const getShorts = await prisma.shortCategory.findMany({
+      const { shortCategoryId, page = 1, limit = 4 } = req.query;
+  
+      const pageNumber = parseInt(page);
+      const limitNumber = parseInt(limit);
+      const skip = (pageNumber - 1) * limitNumber;
+  
+      // ✅ If no categoryId passed, return list of short categories only
+      if (!shortCategoryId) {
+        const shortCategory = await prisma.shortCategory.findMany({
+          select: {
+            shortCategoryId: true,
+            name: true,
+          },
+        });
+  
+        return res.status(200).json({
+            shortCategory,
+        });
+      }
+  
+      // ✅ Fetch one category by ID with paginated shorts
+      const shortCategory = await prisma.shortCategory.findUnique({
+        where: { shortCategoryId: shortCategoryId },
         include: {
-          shorts: true, // ✅ This includes all videos under each category
+          shorts: {
+            skip: skip,
+            take: limitNumber,
+            orderBy: { createdAt: "desc" },
+          },
         },
       });
   
+      if (!shortCategory) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+  
+      // ✅ Count total shorts for pagination info
+      const totalShorts = await prisma.short.count({
+        where: { shortCategoryId: shortCategoryId },
+      });
+  
       return res.status(200).json({
-        data: getShorts
+        category: {
+          id: shortCategory.shortCategoryId,
+          name: shortCategory.name,
+        },
+        shorts: shortCategory.shorts,
+        pagination: {
+          totalShorts,
+          currentPage: pageNumber,
+          totalPages: Math.ceil(totalShorts / limitNumber),
+          limit: limitNumber,
+        },
       });
     } catch (error) {
-      console.error("Error fetching episodes:", error);
+      console.error("Error fetching shorts:", error);
       return res.status(500).json({
         message: "Internal Server Error",
         error: error.message,
       });
     }
   });
+  
   
     
   
