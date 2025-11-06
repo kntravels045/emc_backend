@@ -414,7 +414,7 @@ app.put("/api/video/:videoId", async (req, res) => {
   app.put("/api/video/:videoId", async (req, res) => {
     try {
       const { videoId } = req.params;
-      const { title, description, hostName, episodeNumber, hostVideoLink} = req.body;
+      const { title, description, hostName, episodeNumber, hostVideoLink,videoCategoryId} = req.body;
   
       const updatedVideo = await prisma.video.update({
         where: { videoId },
@@ -424,6 +424,7 @@ app.put("/api/video/:videoId", async (req, res) => {
           hostName,
           episodeNumber,
           hostVideoLink,
+          videoCategoryId,
         },
       });
   
