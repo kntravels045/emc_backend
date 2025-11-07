@@ -69,12 +69,20 @@ model Short {
 
 model Guest {
   guest_id     String   @id @unique @default(cuid())
+  guestImage   String
   guestName    String
-  guestImage   String?
-  guestDetails String?
+  guestRole    String
+  aboutGuest   String
   instagram    String?
   twitter      String?
   threads      String?
+  headingOne   String
+  descriptionOne  String
+  headingTwo   String
+  descriptionTwo String
+  headingthree String
+  descriptionThree String
+  youtubeLink String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   userId       String

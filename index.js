@@ -317,6 +317,51 @@ app.post('/logout', async (req, res) => {
     }
   });
 
+  app.get("/api/episode/all", async (req, res) => {
+    try {
+      const { page, limit } = req.query;
+  
+      const pageNumber = parseInt(page);
+      const limitNumber = parseInt(limit);
+      const skip = (pageNumber - 1) * limitNumber;
+  
+      // Fetch only videos
+      const videos = await prisma.video.findMany({
+        skip,
+        take: limitNumber,
+        orderBy: { createdAt: "desc" },
+        select: {
+          videoId: true,
+          title: true,
+          description: true,
+          hostName: true,
+          episodeNumber: true,
+          hostVideoLink: true,
+          createdAt: true,
+        },
+      });
+  
+      // Count total for pagination
+      const totalVideos = await prisma.video.count();
+  
+      return res.status(200).json({
+        videos,
+        pagination: {
+          totalVideos,
+          currentPage: pageNumber,
+          totalPages: Math.ceil(totalVideos / limitNumber),
+          limit: limitNumber,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching all videos:", error);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  });
+  
   app.get("/api/episode", async (req, res) => {
     try {
       const { categoryId, page = 1, limit = 4 } = req.query;
@@ -561,6 +606,11 @@ app.put("/api/video/:videoId", async (req, res) => {
       });
     }
   });
+  
+
+
+
+
   
   
     
