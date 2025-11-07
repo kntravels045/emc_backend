@@ -452,6 +452,45 @@ app.put("/api/video/:videoId", async (req, res) => {
       return res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
   });
+
+  app.put("/api/shorts/:shortId", async (req, res) => {
+    try {
+
+      const { shortId } = req.params;
+      const { videoLink,shortCategoryId} = req.body;
+  
+      const updatedShort = await prisma.short.update({
+        where: { shortId },
+        data: {
+            videoLink,
+            shortCategoryId
+        },
+      });
+  
+      return res.status(200).json({
+        message: "✅ Short updated successfully",
+        video: updatedShort,
+      });
+    } catch (error) {
+      console.error("Error updating video:", error);
+      return res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  });
+
+  app.delete("/api/shorts/:shortId", async (req, res) => {
+    try {
+      const { shortId } = req.params;
+  
+      await prisma.short.delete({
+        where: { shortId },
+      });
+  
+      return res.status(200).json({ message: "Video deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting video:", error);
+      return res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  });
   
   
   
