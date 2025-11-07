@@ -446,7 +446,9 @@ app.put("/api/video/:videoId", async (req, res) => {
         where: { videoId },
       });
   
-      return res.status(200).json({ message: "Video deleted successfully" });
+      return res.status(200).json({ 
+        message: "Video deleted successfully"
+       });
     } catch (error) {
       console.error("Error deleting video:", error);
       return res.status(500).json({ message: "Internal Server Error", error: error.message });
@@ -468,8 +470,8 @@ app.put("/api/video/:videoId", async (req, res) => {
       });
   
       return res.status(200).json({
-        message: "✅ Short updated successfully",
-        video: updatedShort,
+        message: "✅ Shorts updated successfully",
+        short:updatedShort
       });
     } catch (error) {
       console.error("Error updating video:", error);
@@ -485,7 +487,7 @@ app.put("/api/video/:videoId", async (req, res) => {
         where: { shortId },
       });
   
-      return res.status(200).json({ message: "Video deleted successfully" });
+      return res.status(200).json({ message: "Shorts deleted successfully" });
     } catch (error) {
       console.error("Error deleting video:", error);
       return res.status(500).json({ message: "Internal Server Error", error: error.message });
