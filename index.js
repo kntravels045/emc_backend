@@ -338,6 +338,11 @@ app.post('/logout', async (req, res) => {
           episodeNumber: true,
           hostVideoLink: true,
           createdAt: true,
+          videoCategory: {   
+            select: {
+              name: true,
+            },
+          },
         },
       });
   
@@ -607,7 +612,81 @@ app.put("/api/video/:videoId", async (req, res) => {
     }
   });
   
+//////////////////////////////////////////////////
+// addingGuestRoute
 
+app.post("/api/add-guest", async (req, res) => {
+    try {
+      const {
+        guestImage,
+        guestName,
+        guestRole,
+        aboutGuest,
+        instagram,
+        twitter,
+        threads,
+        headingOne,
+        descriptionOne,
+        headingTwo,
+        descriptionTwo,
+        headingthree,
+        descriptionThree,
+        youtubeLink,
+        userId,
+      } = req.body;
+  
+      // ✅ Validation check
+      if (
+        !guestImage ||
+        !guestName ||
+        !guestRole ||
+        !aboutGuest ||
+        !headingOne ||
+        !descriptionOne ||
+        !headingTwo ||
+        !descriptionTwo ||
+        !headingthree ||
+        !descriptionThree ||
+        !youtubeLink ||
+        !userId
+      ) {
+        return res.status(400).json({ message: "All required fields must be filled." });
+      }
+  
+      // ✅ Create new guest
+      const newGuest = await prisma.guest.create({
+        data: {
+          guestImage,
+          guestName,
+          guestRole,
+          aboutGuest,
+          instagram,
+          twitter,
+          threads,
+          headingOne,
+          descriptionOne,
+          headingTwo,
+          descriptionTwo,
+          headingthree,
+          descriptionThree,
+          youtubeLink,
+          userId,
+        },
+      });
+  
+      return res.status(201).json({
+        message: "Guest created successfully ✅",
+        guest: newGuest,
+      });
+    } catch (error) {
+      console.error("Error creating guest:", error);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  });
+  
 
 
 
