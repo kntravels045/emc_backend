@@ -543,8 +543,54 @@ app.put("/api/video/:videoId", async (req, res) => {
       return res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
   });
+
+  app.get("/api/shorts/all", async (req, res) => {
+    try {
+      const { page, limit } = req.query; // Default values
   
+      const pageNumber = parseInt(page);
+      const limitNumber = parseInt(limit);
+      const skip = (pageNumber - 1) * limitNumber;
   
+      // ✅ Fetch paginated shorts
+      const shorts = await prisma.short.findMany({
+        skip,
+        take: limitNumber,
+        orderBy: { createdAt: "desc" },
+        select: {
+          shortId: true,
+          videoLink: true,
+          shortCategoryId: true,
+          createdAt: true,
+          shortCategory: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+  
+      // ✅ Count total shorts for pagination
+      const totalShorts = await prisma.short.count();
+  
+      // ✅ Response
+      return res.status(200).json({
+        shorts,
+        pagination: {
+          totalShorts,
+          currentPage: pageNumber,
+          totalPages: Math.ceil(totalShorts / limitNumber),
+          limit: limitNumber,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching all shorts:", error);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  });
   
   
   app.get("/api/shorts", async (req, res) => {
@@ -686,8 +732,35 @@ app.post("/api/add-guest", async (req, res) => {
       });
     }
   });
-  
 
+app.get("/api/manage/guest", async (req,res)=>{
+    const manageGuest = await prisma.guest.findMany()
+    res.json({
+        data:manageGuest
+    })
+  })
+  
+app.get("/api/manage-guest", async (req, res) => {
+    try {
+      const manageGuest = await prisma.guest.findMany({
+        select: {
+          guest_id: true,
+          guestImage: true,
+          guestName: true,
+          guestRole: true,
+          instagram: true,
+          twitter: true,
+          threads: true,
+        },
+      });
+  
+      res.status(200).json(manageGuest);
+    } catch (error) {
+      console.error("Error fetching guests:", error);
+      res.status(500).json({ error: "Failed to fetch guests" });
+    }
+  });
+  
 
 
   
