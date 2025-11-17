@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+// prisma/schema.prisma
+datasource db {
+  provider  = "postgresql"
+  url  	    = env("DATABASE_URL")
+  // uncomment next line if you use Prisma <5.10
+  // directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+
+model User {
+  userId      String   @id @unique @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  guest      Guest[]
+  videoCategory    VideoCategory[]
+  shortCategory    ShortCategory[]
+  blog      Blog[]
+}
+
+
+model VideoCategory {
+  videoCategoryId     String @unique  @id @default(cuid())
+  name    String   
+  videos  Video[]
+  userId      String
+  user        User      @relation(fields: [userId], references: [userId])
+}
+
+
+model ShortCategory {
+  shortCategoryId  String @unique  @id @default(cuid())
+  name    String  
+  shorts  Short[]
+  userId      String
+  user        User      @relation(fields: [userId], references: [userId])
+}
+
+
+model Video {
+  videoId     String  @unique @id @default(cuid())
+  title          String
+  description    String?
+  hostName       String?
+  episodeNumber  String?
+  hostVideoLink  String
+  videoCategoryId     String
+  videoCategory      VideoCategory @relation(fields: [videoCategoryId], references: [videoCategoryId], onDelete: Cascade)
+  createdAt      DateTime   @default(now())
+}
+
+
+model Short {
+  shortId    String @unique @id @default(cuid())
+  videoLink   String
+  shortCategoryId  String
+  shortCategory   ShortCategory @relation(fields: [shortCategoryId], references: [shortCategoryId])
+  createdAt   DateTime  @default(now())
+}
+
+
+model Guest {
+  guest_id     String   @id @unique @default(cuid())
+  guestImage   String
+  guestName    String
+  guestRole    String
+  aboutGuest   String
+  instagram    String?
+  twitter      String?
+  threads      String?
+  headingOne   String
+  descriptionOne  String
+  headingTwo   String
+  descriptionTwo String
+  headingthree String
+  descriptionThree String
+  youtubeLink String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       String
+  user         User     @relation(fields: [userId], references: [userId])
+}
+
+
+model Blog {
+  blogId      String   @unique  @id @default(cuid())
+  title       String
+  thumbnail   String?  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [userId])
+  blocks      Block[]
+}
+
+model Block {
+  blockId        String    @unique  @id @default(cuid())
+  type      String
+  value     String?
+  imageUrl  String?
+  order     Int? 
+  blogId    String
+  blog      Blog     @relation(fields: [blogId], references: [blogId])
+}
