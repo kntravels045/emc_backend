@@ -876,6 +876,38 @@ app.post("/api/add-blogs",upload.fields([{ name: "thumbnail", maxCount: 1 },
   // --------------------------------
   // GET ALL BLOGS
   // --------------------------------
+  app.get("/api/blogs", async (req, res) => {
+    try {
+      // Get from query → /api/blogs?page=1&limit=10
+      let { page, limit } = req.query;
+  
+      page = parseInt(page) 
+      limit = parseInt(limit)
+  
+      const skip = (page - 1) * limit;
+  
+      const blogs = await prisma.blog.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      });
+  
+      const totalBlogs = await prisma.blog.count();
+  
+      res.json({
+        totalBlogs,
+        currentPage: page,
+        totalPages: Math.ceil(totalBlogs / limit),
+        blogs,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch blogs" });
+    }
+  });
+  
+
+
   app.post("/api/blogs", async (req, res) => {
     try {
       const {page,limit} = req.body; // frontend sends { page, limit }
@@ -923,169 +955,204 @@ app.post("/api/add-blogs",upload.fields([{ name: "thumbnail", maxCount: 1 },
     }
   });
   
-  app.put(
-    "/api/blogs/:blogId",
-    upload.fields([
-      { name: "images", maxCount: 20 },
-      { name: "thumbnail", maxCount: 1 },
-    ]),
-    async (req, res) => {
-      const { blogId } = req.params;
-      console.log("🟦 Step 1: Received request to update blog:", blogId);
-  
-      try {
-        // Step 2: Parse request body
-        console.log("🟦 Step 2: Raw request body:", req.body.data);
-        const { title, blocks } = JSON.parse(req.body.data);
-  
-        console.log("🟦 Step 3: Parsed title:", title);
-        console.log("🟦 Step 4: Parsed blocks:", blocks);
-  
-        // Step 5: Fetch old blog
-        console.log("🟦 Step 5: Fetching old blog from DB...");
-        const oldBlog = await prisma.blog.findUnique({
-          where: { blogId },
-          include: { blocks: true },
-        });
-  
-        console.log("🟦 Step 6: Old blog found:", oldBlog);
-  
-        if (!oldBlog) {
-          console.log("❌ Blog not found in DB");
-          return res.status(404).json({ error: "Blog not found" });
+// ================================================
+// UPDATE BLOG API WITH FULL CONSOLE LOGS
+// ================================================
+
+app.put("/api/blogs/:blogId",upload.fields([
+    { name: "images", maxCount: 50 },
+    { name: "thumbnail", maxCount: 1 },]),
+
+  async (req, res) => {
+    console.log(req.body),
+    console.log(req.files)
+    console.log("🔵 Entered PUT /api/blogs/:blogId");
+
+    const { blogId } = req.params;
+    console.log("🔹 Blog ID received =", blogId);
+
+    try {
+      console.log("🟦 Raw req.body.data =", req.body.data);
+
+      const { title, blocks } = JSON.parse(req.body.data);
+
+      console.log("🟩 Title =", title);
+      console.log("🟩 Blocks received from FE =", blocks);
+
+      console.log("🔍 Fetching old blog...");
+      const oldBlog = await prisma.blog.findUnique({
+        where: { blogId },
+        include: { blocks: true },
+      });
+
+      console.log("📦 Old Blog =", oldBlog);
+
+      if (!oldBlog) {
+        console.log("❌ Blog Not Found");
+        return res.status(404).json({ error: "Blog not found" });
+      }
+
+      // ------------------------
+      // Helper to extract S3 key
+      // ------------------------
+      console.log("🛠 Creating getS3KeyFromUrl helper");
+      const getS3KeyFromUrl = (url) => {
+        console.log("➡ Extracting key from URL =", url);
+        if (!url) return null;
+
+        try {
+          const urlObj = new URL(url);
+          const key = decodeURIComponent(urlObj.pathname.slice(1));
+          console.log("🔑 Extracted key =", key);
+          return key;
+        } catch (err) {
+          console.log("❌ URL extraction failed", err);
+          return null;
         }
-  
-        // Step 7: Helper fn for S3 key extraction
-        console.log("🟦 Step 7: Setting up S3 Key extractor...");
-        const getS3KeyFromUrl = (url) => {
-          if (!url) return null;
-          try {
-            const urlObj = new URL(url);
-            const key = decodeURIComponent(urlObj.pathname.slice(1));
-            console.log("🔑 Extracted S3 key:", key);
-            return key;
-          } catch (e) {
-            console.log("⚠ URL parsing failed for:", url);
-            return null;
-          }
-        };
-  
-        // Step 8: Check if new thumbnail uploaded
-        console.log("🟦 Step 8: Checking for new thumbnail upload...");
-        if (req.files?.thumbnail?.[0]) {
-          console.log("🆕 New thumbnail uploaded:", req.files.thumbnail[0].location);
-  
-          if (oldBlog.thumbnail) {
-            console.log("🟦 Step 8.1: Old thumbnail exists. Deleting...");
-            const oldThumbKey = getS3KeyFromUrl(oldBlog.thumbnail);
-  
-            if (oldThumbKey) {
-              console.log("🗑️ Deleting old thumbnail from S3:", oldThumbKey);
-              await s3.send(
-                new DeleteObjectCommand({
-                  Bucket: process.env.S3_BUCKET_NAME,
-                  Key: oldThumbKey,
-                })
-              );
-              console.log("✅ Old thumbnail deleted");
-            }
-          }
-        } else {
-          console.log("ℹ No new thumbnail uploaded");
+      };
+
+      // ---------------------------------------------------------
+      // THUMBNAIL HANDLING (Delete old only if new is uploaded)
+      // ---------------------------------------------------------
+      console.log("🟦 Checking for thumbnail update...");
+
+      let newThumbnail = oldBlog.thumbnail;
+      console.log("🟩 Current Thumbnail =", newThumbnail);
+
+      if (req.files?.thumbnail?.[0]) {
+        console.log("🆕 New Thumbnail Uploaded =", req.files.thumbnail[0].location);
+
+        const oldThumbKey = getS3KeyFromUrl(oldBlog.thumbnail);
+
+        if (oldThumbKey) {
+          console.log("🗑 Deleting OLD Thumbnail =", oldThumbKey);
+          await s3.send(
+            new DeleteObjectCommand({
+              Bucket: process.env.S3_BUCKET_NAME,
+              Key: oldThumbKey,
+            })
+          );
         }
-  
-        // Step 9: Delete old block images
-        console.log("🟦 Step 9: Checking old block images for deletion...");
-        for (const block of oldBlog.blocks) {
-          if (block.imageUrl) {
-            const oldImgKey = getS3KeyFromUrl(block.imageUrl);
-  
+
+        newThumbnail = req.files.thumbnail[0].location;
+        console.log("📌 Updated Thumbnail =", newThumbnail);
+      }
+
+      // ---------------------------------------------------------
+      // BLOCK IMAGES HANDLING
+      // (Delete only if replaced, keep if same)
+      // ---------------------------------------------------------
+      console.log("🟦 Checking block images update logic...");
+
+      const uploadedImages = req.files["images"] || [];
+      console.log("🖼 Uploaded images count =", uploadedImages.length);
+
+      let uploadedImageIndex = 0;
+
+      const updatedBlocks = [];
+
+      console.log("🔄 Starting block mapping...");
+
+      for (let i = 0; i < blocks.length; i++) {
+        const block = blocks[i];
+        console.log(`\n📌 Processing block index ${i}`, block);
+
+        const oldBlock = oldBlog.blocks.find((b) => b.blockId === block.blockId);
+        console.log("🔍 Matching old block =", oldBlock);
+
+        // ---------------------------
+        // TEXT BLOCK
+        // ---------------------------
+        if (block.type !== "image") {
+          console.log("✏ Block is TEXT. Keeping/Updating text only.");
+
+          updatedBlocks.push({
+            type: "text",
+            value: block.value,
+            imageUrl: null,
+          });
+
+          continue;
+        }
+
+        // ---------------------------
+        // IMAGE BLOCK
+        // ---------------------------
+        console.log("🖼 Block is IMAGE");
+
+        if (block.hasNewImage === true) {
+          console.log("🆕 New image selected for this block");
+
+          const newImgFile = uploadedImages[uploadedImageIndex];
+          uploadedImageIndex++;
+
+          console.log("📥 New uploaded img =", newImgFile?.location);
+
+          // Delete old image
+          if (oldBlock?.imageUrl) {
+            const oldImgKey = getS3KeyFromUrl(oldBlock.imageUrl);
+            console.log("🗑 Deleting old block image =", oldImgKey);
+
             if (oldImgKey) {
-              console.log("🗑️ Deleting block image from S3:", oldImgKey);
               await s3.send(
                 new DeleteObjectCommand({
                   Bucket: process.env.S3_BUCKET_NAME,
                   Key: oldImgKey,
                 })
               );
-              console.log("✅ Block image deleted");
             }
           }
-        }
-  
-        // Step 10: Process new images
-        console.log("🟦 Step 10: Processing new uploaded block images...");
-        const blockFiles = req.files["images"] || [];
-        console.log("📤 Total new images uploaded:", blockFiles.length);
-  
-        let imageCounter = 0;
-  
-        // Step 11: Build updated blocks
-        console.log("🟦 Step 11: Building updated block array...");
-        const updatedBlocks = blocks.map((block, index) => {
-          console.log(`➡ Processing block ${index}:`, block);
-  
-          if (block.type === "image") {
-            if (blockFiles[imageCounter]) {
-              console.log(`🖼 Assigning new image to block ${index}`);
-              return {
-                type: block.type,
-                value: block.value || null,
-                imageUrl: blockFiles[imageCounter++].location,
-              };
-            } else {
-              console.log(`ℹ No new image for block ${index}, keeping old`);
-              return {
-                type: block.type,
-                value: block.value || null,
-                imageUrl: block.imageUrl || null,
-              };
-            }
-          }
-  
-          console.log(`📝 Block ${index} is text block`);
-          return {
-            type: block.type,
+
+          updatedBlocks.push({
+            type: "image",
             value: block.value || null,
-            imageUrl: null,
-          };
-        });
-  
-        // Step 12: Determine new thumbnail
-        console.log("🟦 Step 12: Setting final thumbnail...");
-        let newThumbnail = oldBlog.thumbnail;
-  
-        if (req.files?.thumbnail?.[0]) {
-          newThumbnail = req.files.thumbnail[0].location;
-          console.log("📌 New thumbnail set:", newThumbnail);
+            imageUrl: newImgFile.location,
+          });
+
         } else {
-          console.log("📌 Keeping old thumbnail:", newThumbnail);
+          console.log("ℹ No new image; KEEPING OLD IMAGE");
+
+          updatedBlocks.push({
+            type: "image",
+            value: block.value || null,
+            imageUrl: oldBlock?.imageUrl || null,
+          });
         }
-  
-        // Step 13: Update final blog in DB
-        console.log("🟦 Step 13: Updating blog in Prisma...");
-        const updatedBlog = await prisma.blog.update({
-          where: { blogId },
-          data: {
-            title,
-            thumbnail: newThumbnail,
-            updatedAt: new Date(),
-            blocks: {
-              deleteMany: {},
-              create: updatedBlocks,
-            },
-          },
-          include: { blocks: true },
-        });
-  
-        console.log("✅ Step 14: Blog updated successfully:", updatedBlog);
-        res.json(updatedBlog);
-      } catch (error) {
-        console.error("❌ Step ERROR:", error);
-        res.status(500).json({ error: "Failed to update blog" });
       }
+
+      console.log("\n✅ FINAL Updated Blocks =", updatedBlocks);
+
+      // ---------------------------------------------------------
+      // SAVE TO DB
+      // ---------------------------------------------------------
+      console.log("💾 Updating blog in database...");
+
+      const finalBlog = await prisma.blog.update({
+        where: { blogId },
+        data: {
+          title,
+          thumbnail: newThumbnail,
+          updatedAt: new Date(),
+          blocks: {
+            deleteMany: {},
+            create: updatedBlocks,
+          },
+        },
+        include: { blocks: true },
+      });
+
+      console.log("🎉 Blog Updated Successfully =", finalBlog);
+
+      res.json(finalBlog);
+    } catch (error) {
+      console.log("❌ SERVER ERROR =", error);
+      res.status(500).json({ error: "Failed to update blog" });
     }
-  );
+  }
+
+ 
+);
+
   
   
   app.delete("/api/blogs/:blogId", async (req, res) => {
