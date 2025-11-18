@@ -645,7 +645,9 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
         headingthree,descriptionThree,youtubeLink,userId,
       } = req.body;
 
-      const {imageUrl} = req.file.location
+     
+
+      const imageUrl = req.file.location
 
       // ✅ Validation check
       if (
@@ -655,6 +657,7 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
       ) {
         return res.status(400).json({ message: "All required fields must be filled." });
       }
+
   
       // ✅ Create new guest
       const newGuest = await prisma.guest.create({
@@ -744,34 +747,88 @@ app.get("/api/manage-guest/:guestId", async (req, res) => {
   });
 
   // DELETE GUEST
+// app.delete("/api/manage-guest/:guestId", async (req, res) => {
+//   try {
+//     const { guestId } = req.params;
+
+//     // Check guest exists
+//     const guest = await prisma.guest.findUnique({
+//       where: { guest_id: guestId },
+//     });
+
+//     if (!guest) {
+//       return res.status(404).json({ message: "Guest not found" });
+//     }
+
+//     await prisma.guest.delete({
+//       where: { guest_id: guestId },
+//     });
+
+//     return res.status(200).json({
+//       message: "Guest deleted successfully",
+//     });
+//   } catch (error) {
+//     console.error("Error deleting guest:", error);
+//     return res.status(500).json({
+//       message: "Internal Server Error",
+//       error: error.message,
+//     });
+//   }
+// });
+
 app.delete("/api/manage-guest/:guestId", async (req, res) => {
+  console.log("🟡 DELETE /api/manage-guest/:guestId called");
+
   try {
     const { guestId } = req.params;
+    console.log("👉 guestId received:", guestId);
 
-    // Check guest exists
+    // 1️⃣ Find the guest
+    console.log("🔍 Searching guest in database...");
+
     const guest = await prisma.guest.findUnique({
       where: { guest_id: guestId },
     });
 
+    console.log("📌 Guest fetched from DB:", guest);
+
     if (!guest) {
+      console.log("❌ Guest not found");
       return res.status(404).json({ message: "Guest not found" });
     }
+
+    // 2️⃣ Delete image from S3 if exists
+    console.log("🖼 Checking if guest has an image...");
+
+    if (guest.guestImage) {
+      console.log("🗑 Deleting image from S3:", guest.guestImage);
+      await deleteS3Image(guest.guestImage);
+      console.log("✅ Image deleted from S3");
+    } else {
+      console.log("⚠ No image found to delete");
+    }
+
+    // 3️⃣ Delete guest from database
+    console.log("🗑 Deleting guest from database...");
 
     await prisma.guest.delete({
       where: { guest_id: guestId },
     });
 
-    return res.status(200).json({
-      message: "Guest deleted successfully",
-    });
+    console.log("✅ Guest deleted successfully from Prisma");
+
+    // 4️⃣ Final response
+    return res.status(200).json({ message: "Guest deleted successfully" });
   } catch (error) {
-    console.error("Error deleting guest:", error);
+    console.error("❌ Error deleting guest:", error);
+
     return res.status(500).json({
       message: "Internal Server Error",
       error: error.message,
     });
   }
 });
+
 
   
   
