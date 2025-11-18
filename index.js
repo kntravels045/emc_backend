@@ -690,12 +690,12 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
     }
   });
 
-app.get("/api/manage/guest", async (req,res)=>{
-    const manageGuest = await prisma.guest.findMany()
-    res.json({
-        data:manageGuest
-    })
-  })
+// app.get("/api/manage/guest", async (req,res)=>{
+//     const manageGuest = await prisma.guest.findMany()
+//     res.json({
+//         data:manageGuest
+//     })
+//   })
   
 app.get("/api/manage-guest", async (req, res) => {
     try {
@@ -718,7 +718,7 @@ app.get("/api/manage-guest", async (req, res) => {
     }
   });
 
-  app.get("/api/manage-guest/:guestId", async (req, res) => {
+app.get("/api/manage-guest/:guestId", async (req, res) => {
     try {
       const { guestId } = req.params;
   
@@ -742,6 +742,37 @@ app.get("/api/manage-guest", async (req, res) => {
       });
     }
   });
+
+  // DELETE GUEST
+app.delete("/api/manage-guest/:guestId", async (req, res) => {
+  try {
+    const { guestId } = req.params;
+
+    // Check guest exists
+    const guest = await prisma.guest.findUnique({
+      where: { guest_id: guestId },
+    });
+
+    if (!guest) {
+      return res.status(404).json({ message: "Guest not found" });
+    }
+
+    await prisma.guest.delete({
+      where: { guest_id: guestId },
+    });
+
+    return res.status(200).json({
+      message: "Guest deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting guest:", error);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+});
+
   
   
 
