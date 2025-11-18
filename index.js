@@ -641,49 +641,25 @@ app.post('/logout', async (req, res) => {
 app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
     try {
       const {
-        guestImage,
-        guestName,
-        guestRole,
-        aboutGuest,
-        instagram,
-        twitter,
-        threads,
-        headingOne,
-        descriptionOne,
-        headingTwo,
-        descriptionTwo,
-        headingthree,
-        descriptionThree,
-        youtubeLink,
-        userId,
+        guestName,guestRole,aboutGuest,instagram,twitter,threads,headingOne,descriptionOne,headingTwo,descriptionTwo,
+        headingthree,descriptionThree,youtubeLink,userId,
       } = req.body;
-  
+
+      const {imageUrl} = req.file.location
+
       // ✅ Validation check
       if (
-        !req.file ||
-        !guestName ||
-        !guestRole ||
-        !aboutGuest ||
-        !headingOne ||
-        !descriptionOne ||
-        !headingTwo ||
-        !descriptionTwo ||
-        !headingthree ||
-        !descriptionThree ||
-        !youtubeLink ||
-        !userId
+        !guestName || !guestRole || !aboutGuest ||
+        !headingOne || !descriptionOne || !headingTwo || !descriptionTwo || !headingthree ||
+        !descriptionThree || !youtubeLink || !userId
       ) {
         return res.status(400).json({ message: "All required fields must be filled." });
       }
-
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "guests",
-      });
   
       // ✅ Create new guest
       const newGuest = await prisma.guest.create({
         data: {
-         guestImage: uploadResult.secure_url, // Cloudinary URL
+         guestImage: imageUrl, // Cloudinary URL
           guestName,
           guestRole,
           aboutGuest,
