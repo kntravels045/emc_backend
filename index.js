@@ -7,8 +7,9 @@ const cookieParser = require('cookie-parser')
 const { PrismaClient } = require('@prisma/client')
 const app = express()
 const prisma = new PrismaClient()
-const { PutObjectCommand,DeleteObjectCommand} = require("@aws-sdk/client-s3");
 const s3 = require('./s3Client')
+const config = require('./config');
+const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
 const upload = require("./multer.js");
 dotenv.config();
@@ -18,6 +19,17 @@ app.use(cors({
   }));
 app.use(express.json())
 app.use(cookieParser())
+
+
+// Correct S3 Client
+const s3Client = new S3Client({
+  region: config.AWS_REGION,
+  credentials: {
+    accessKeyId: config.AWS_ACCESS_KEY_ID,
+    secretAccessKey: config.AWS_SECRET_ACCESS_KEY,
+  }
+}
+)
 
 //console.log(process.env.ACCESS_SECRET)
 
@@ -746,92 +758,173 @@ app.get("/api/manage-guest/:guestId", async (req, res) => {
     }
   });
 
-  // DELETE GUEST
-// app.delete("/api/manage-guest/:guestId", async (req, res) => {
-//   try {
-//     const { guestId } = req.params;
+  app.put("/api/manage-guest/:guestId", async (req, res) => {
+    console.log("🟡 PUT /api/manage-guest/:guestId called");
+  
+    try {
+      const { guestId } = req.params;
+  
+      // Destructure all guest fields from the request body
+      const {
+        guestImage,
+        guestName,
+        guestRole,
+        aboutGuest,
+        instagram,
+        twitter,
+        threads,
+        headingOne,
+        descriptionOne,
+        headingTwo,
+        descriptionTwo,
+        headingthree,
+        descriptionThree,
+        youtubeLink,
+        userId,
+      } = req.body;
+  
+      // Fetch existing guest from DB
+      const guest = await prisma.guest.findUnique({
+        where: { guest_id: guestId },
+      });
 
-//     // Check guest exists
-//     const guest = await prisma.guest.findUnique({
-//       where: { guest_id: guestId },
-//     });
+      console.log(guest)
+      console.log(guest.guestImage)
+  
+      if (!guest) {
+        return res.status(404).json({ message: "Guest not found" });
+      }
+  
+      // Delete old image from S3 if guestImage changed
+      if (guestImage && guestImage !== guest.guestImage && guest.guestImage) {
+        console.log("🖼 Deleting old S3 image:", guest.guestImage);
+  
+        const oldPhotoUrl = guest.guestImage;
+        const decodedKey = decodeURIComponent(oldPhotoUrl.split("/").pop());
+        const fileKey = decodedKey.startsWith("Dashboard/")
+          ? decodedKey
+          : `Dashboard/${decodedKey}`;
+  
+        const deleteParams = {
+          Bucket: config.S3_BUCKET_NAME,
+          Key: fileKey,
+        };
+  
+        const deleteCommand = new DeleteObjectCommand(deleteParams);
+        await s3Client.send(deleteCommand);
+        console.log("🟢 Old image deleted from S3");
+      }
+  
+      // Update guest record with new data
+      const updatedGuest = await prisma.guest.update({
+        where: { guest_id: guestId },
+        data: {
+          guestImage: guestImage || guest.guestImage,
+          guestName,
+          guestRole,
+          aboutGuest,
+          instagram,
+          twitter,
+          threads,
+          headingOne,
+          descriptionOne,
+          headingTwo,
+          descriptionTwo,
+          headingthree,
+          descriptionThree,
+          youtubeLink,
+          userId,
+        },
+      });
+  
+      console.log("🟢 Guest updated in DB");
+  
+      return res.status(200).json({
+        message: "Guest updated successfully",
+        guest: updatedGuest,
+      });
+    } catch (error) {
+      console.error("❌ UPDATE ERROR:", error);
+      return res.status(500).json({
+        message: "Failed to update guest",
+        error: error.message,
+      });
+    }
+  });  
 
-//     if (!guest) {
-//       return res.status(404).json({ message: "Guest not found" });
-//     }
 
-//     await prisma.guest.delete({
-//       where: { guest_id: guestId },
-//     });
-
-//     return res.status(200).json({
-//       message: "Guest deleted successfully",
-//     });
-//   } catch (error) {
-//     console.error("Error deleting guest:", error);
-//     return res.status(500).json({
-//       message: "Internal Server Error",
-//       error: error.message,
-//     });
-//   }
-// });
 
 app.delete("/api/manage-guest/:guestId", async (req, res) => {
+
   console.log("🟡 DELETE /api/manage-guest/:guestId called");
 
   try {
     const { guestId } = req.params;
-    console.log("👉 guestId received:", guestId);
 
-    // 1️⃣ Find the guest
-    console.log("🔍 Searching guest in database...");
-
+    // Fetch guest
     const guest = await prisma.guest.findUnique({
       where: { guest_id: guestId },
     });
 
-    console.log("📌 Guest fetched from DB:", guest);
-
     if (!guest) {
-      console.log("❌ Guest not found");
       return res.status(404).json({ message: "Guest not found" });
     }
 
-    // 2️⃣ Delete image from S3 if exists
-    console.log("🖼 Checking if guest has an image...");
-
+    // ----------------------------------------------------
+    // 1️⃣ DELETE THE IMAGE FROM S3
+    // ----------------------------------------------------
     if (guest.guestImage) {
-      console.log("🗑 Deleting image from S3:", guest.guestImage);
-      await deleteS3Image(guest.guestImage);
-      console.log("✅ Image deleted from S3");
-    } else {
-      console.log("⚠ No image found to delete");
+      console.log("🖼 Deleting S3 image:", guest.guestImage);
+
+      const photoUrl = guest.guestImage;
+
+      // Extract filename
+      const decodedKey = decodeURIComponent(photoUrl.split("/").pop());
+      const fileKey = decodedKey.startsWith("Dashboard/")
+        ? decodedKey
+        : `Dashboard/${decodedKey}`;
+
+      console.log("📌 Final S3 delete key:", fileKey);
+
+      const deleteParams = {
+        Bucket: config.S3_BUCKET_NAME,
+        Key: fileKey,
+      };
+ console.log( "delete1",deleteParams)
+      const deleteCommand = new DeleteObjectCommand(deleteParams);
+      console.log("delete2",deleteCommand)
+
+      const deleteResponse = await s3Client.send(deleteCommand);
+      console.log("delete3",deleteResponse)
+
+      console.log("🟢 S3 delete response:", deleteResponse);
     }
 
-    // 3️⃣ Delete guest from database
-    console.log("🗑 Deleting guest from database...");
-
+    // ----------------------------------------------------
+    // 2️⃣ DELETE GUEST FROM DATABASE
+    // ----------------------------------------------------
     await prisma.guest.delete({
       where: { guest_id: guestId },
     });
 
-    console.log("✅ Guest deleted successfully from Prisma");
+    console.log("🟢 Guest deleted from DB");
 
-    // 4️⃣ Final response
-    return res.status(200).json({ message: "Guest deleted successfully" });
+    return res.status(200).json({
+      message: "Guest deleted successfully",
+      deletedGuestId: guestId,
+    });
+
   } catch (error) {
-    console.error("❌ Error deleting guest:", error);
-
+    console.error("❌ DELETE ERROR:", error);
     return res.status(500).json({
-      message: "Internal Server Error",
+      message: "Failed to delete guest",
       error: error.message,
     });
   }
 });
 
 
-  
-  
+
 
 
 
