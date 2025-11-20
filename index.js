@@ -138,7 +138,7 @@ app.post("/register", async (req, res) => {
       // Send refresh token in cookie
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "lax",
         maxAge: remember
           ? 30 * 24 * 60 * 60 * 1000 // 30 days
