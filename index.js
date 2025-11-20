@@ -93,43 +93,72 @@ app.post("/register", async (req, res) => {
   // ==========================
   app.post("/login", async (req, res) => {
     const data = req.body;
+  
     try {
       const user = await prisma.user.findUnique({
-         where: { 
-            email:data.email
-        } 
-    });
-      if (!user) return res.status(400).json({ message: "Invalid credentials" });
-  
-      const isMatch = await bcrypt.compare(data.password, user.password);
-      if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
-  
-      const accessToken = jwt.sign({ userId:user.userId }, process.env.ACCESS_SECRET , { expiresIn: '30s' });
-      const refreshToken = jwt.sign({ userId:user.userId }, process.env.ACCESS_SECRET , { expiresIn: '60s' });
-  
-       await prisma.user.update({
-        where: { 
-            userId: user.userId
-        },
-        data: { 
-            refreshToken:refreshToken },
+        where: { email: data.email },
       });
   
+      if (!user)
+        return res.status(400).json({ message: "Invalid credentials" });
+  
+      const isMatch = await bcrypt.compare(data.password, user.password);
+      if (!isMatch)
+        return res.status(400).json({ message: "Invalid credentials" });
+  
+      // 🔥 “Remember Me” Logic
+      const remember = data.rememberMe === true;
+  
+      const accessExpiry = remember ? "7d" : "30m";
+      const refreshExpiry = remember ? "30d" : "1d";
+  
+      console.log("Remember Me:", remember);
+      console.log("Access Expiry:", accessExpiry);
+      console.log("Refresh Expiry:", refreshExpiry);
+  
+      // Generate tokens
+      const accessToken = jwt.sign(
+        { userId: user.userId },
+        process.env.ACCESS_SECRET,
+        { expiresIn: accessExpiry }
+      );
+  
+      const refreshToken = jwt.sign(
+        { userId: user.userId },
+        process.env.ACCESS_SECRET,
+        { expiresIn: refreshExpiry }
+      );
+  
+      // Save refresh token in DB
+      await prisma.user.update({
+        where: { userId: user.userId },
+        data: { refreshToken: refreshToken },
+      });
+  
+      // Send refresh token in cookie
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: false,
         sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        maxAge: remember
+          ? 30 * 24 * 60 * 60 * 1000 // 30 days
+          : 24 * 60 * 60 * 1000,     // 1 day
       });
-      
-
   
-      res.json({ accessToken, userId:user.userId, message: "Login successful" });
+      // Response
+      res.json({
+        accessToken,
+        userId: user.userId,
+        rememberMe: remember,
+        message: "Login successful",
+      });
+  
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Server error" });
     }
   });
+  
   
   // ==========================
   // 🔄 Refresh Token Route
@@ -1099,6 +1128,69 @@ app.post("/api/add-blogs",upload.fields([{ name: "thumbnail", maxCount: 1 },
   });
   
 
+  app.get("/api/blogs/:blogId/similar", async (req, res) => {
+    const { blogId } = req.params;
+  
+    try {
+      console.log("🔍 Fetching blog with ID:", blogId);
+  
+      const blog = await prisma.blog.findUnique({
+        where: { blogId },
+        include: { 
+          blocks: {
+            orderBy: { order: 'asc' }
+          }
+        },
+      });
+  
+      if (!blog) {
+        console.log("❌ Blog not found");
+        return res.status(404).json({ error: "Blog not found" });
+      }
+  
+      console.log("✅ Blog found:", blog.title);
+  
+  
+      // -------------------------------------------------------------
+      //     FETCH RANDOM BLOGS (Shuffled) EXCLUDING CURRENT BLOG
+      // -------------------------------------------------------------
+      console.log("🔍 Fetching random related blogs...");
+  
+      let allBlogs = await prisma.blog.findMany({
+        where: {
+          NOT: { blogId: blog.blogId }
+        },
+        select: {
+          blogId: true,
+          title: true,
+          thumbnail: true,
+          updatedAt:true,
+          createdAt:true
+        }
+      });
+  
+      // Shuffle array (Fisher-Yates shuffle)
+      allBlogs = allBlogs.sort(() => Math.random() - 0.5);
+  
+      // Take any 4 random blogs
+      const randomBlogs = allBlogs.slice(0, 4);
+  
+      console.log("📌 Random blogs count:", randomBlogs.length);
+  
+      // -------------------------------------------------------------
+  
+      res.json({
+        blog,
+        relatedBlogs: randomBlogs
+      });
+  
+    } catch (err) {
+      console.error("GET Blog Error:", err);
+      res.status(500).json({ error: "Failed to fetch blog" });
+    }
+  });
+  
+
 
 app.get("/api/blogs/:blogId", async (req, res) => {
   const { blogId } = req.params;
@@ -1127,6 +1219,9 @@ app.get("/api/blogs/:blogId", async (req, res) => {
 // ================================================
 // UPDATE BLOG
 // ================================================
+
+
+
 app.put(
   "/api/blogs/:blogId",
   upload.fields([
