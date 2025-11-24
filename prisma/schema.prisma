@@ -93,20 +93,12 @@ model Guest {
 model Blog {
   blogId      String   @unique  @id @default(cuid())
   title       String
-  thumbnail   String?  
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  thumbnail   String?                 
+  content    Json                          
+  author     String?
   userId      String
   user        User     @relation(fields: [userId], references: [userId])
-  blocks      Block[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
-model Block {
-  blockId        String    @unique  @id @default(cuid())
-  type      String
-  value     String?
-  imageUrl  String?
-  order     Int? 
-  blogId    String
-  blog      Blog     @relation(fields: [blogId], references: [blogId])
-}

@@ -56,12 +56,20 @@ CREATE TABLE "Short" (
 -- CreateTable
 CREATE TABLE "Guest" (
     "guest_id" TEXT NOT NULL,
+    "guestImage" TEXT NOT NULL,
     "guestName" TEXT NOT NULL,
-    "guestImage" TEXT,
-    "guestDetails" TEXT,
+    "guestRole" TEXT NOT NULL,
+    "aboutGuest" TEXT NOT NULL,
     "instagram" TEXT,
     "twitter" TEXT,
     "threads" TEXT,
+    "headingOne" TEXT NOT NULL,
+    "descriptionOne" TEXT NOT NULL,
+    "headingTwo" TEXT NOT NULL,
+    "descriptionTwo" TEXT NOT NULL,
+    "headingthree" TEXT NOT NULL,
+    "descriptionThree" TEXT NOT NULL,
+    "youtubeLink" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "userId" TEXT NOT NULL,
@@ -71,15 +79,16 @@ CREATE TABLE "Guest" (
 
 -- CreateTable
 CREATE TABLE "Blog" (
-    "blog_id" TEXT NOT NULL,
-    "blogTitle" TEXT NOT NULL,
-    "blogContent" TEXT NOT NULL,
-    "blogImage" TEXT,
+    "blogId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "thumbnail" TEXT,
+    "content" JSONB NOT NULL,
+    "author" TEXT,
     "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Blog_pkey" PRIMARY KEY ("blog_id")
+    CONSTRAINT "Blog_pkey" PRIMARY KEY ("blogId")
 );
 
 -- CreateIndex
@@ -104,7 +113,7 @@ CREATE UNIQUE INDEX "Short_shortId_key" ON "Short"("shortId");
 CREATE UNIQUE INDEX "Guest_guest_id_key" ON "Guest"("guest_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Blog_blog_id_key" ON "Blog"("blog_id");
+CREATE UNIQUE INDEX "Blog_blogId_key" ON "Blog"("blogId");
 
 -- AddForeignKey
 ALTER TABLE "VideoCategory" ADD CONSTRAINT "VideoCategory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -113,7 +122,7 @@ ALTER TABLE "VideoCategory" ADD CONSTRAINT "VideoCategory_userId_fkey" FOREIGN K
 ALTER TABLE "ShortCategory" ADD CONSTRAINT "ShortCategory_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("userId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Video" ADD CONSTRAINT "Video_videoCategoryId_fkey" FOREIGN KEY ("videoCategoryId") REFERENCES "VideoCategory"("videoCategoryId") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Video" ADD CONSTRAINT "Video_videoCategoryId_fkey" FOREIGN KEY ("videoCategoryId") REFERENCES "VideoCategory"("videoCategoryId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Short" ADD CONSTRAINT "Short_shortCategoryId_fkey" FOREIGN KEY ("shortCategoryId") REFERENCES "ShortCategory"("shortCategoryId") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -795,7 +795,6 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
   
       // Destructure all guest fields from the request body
       const {
-        guestImage,
         guestName,
         guestRole,
         aboutGuest,
@@ -1069,128 +1068,449 @@ app.post("/api/add-blogs",upload.fields([{ name: "thumbnail", maxCount: 1 },
   // --------------------------------
   // GET ALL BLOGS
   // --------------------------------
-  app.get("/api/blogs", async (req, res) => {
-    try {
-      // Get from query → /api/blogs?page=1&limit=10
-      let { page, limit } = req.query;
+//   app.get("/api/blogs", async (req, res) => {
+//     try {
+//       // Get from query → /api/blogs?page=1&limit=10
+//       let { page, limit } = req.query;
   
-      page = parseInt(page) 
-      limit = parseInt(limit)
+//       page = parseInt(page) 
+//       limit = parseInt(limit)
   
-      const skip = (page - 1) * limit;
+//       const skip = (page - 1) * limit;
   
-      const blogs = await prisma.blog.findMany({
-        skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      });
+//       const blogs = await prisma.blog.findMany({
+//         skip,
+//         take: limit,
+//         orderBy: { createdAt: "desc" },
+//       });
   
-      const totalBlogs = await prisma.blog.count();
+//       const totalBlogs = await prisma.blog.count();
   
-      res.json({
-        totalBlogs,
-        currentPage: page,
-        totalPages: Math.ceil(totalBlogs / limit),
-        blogs,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Failed to fetch blogs" });
-    }
-  });
-  
-
-
-  app.post("/api/blogs", async (req, res) => {
-    try {
-      const {page,limit} = req.body; // frontend sends { page, limit }
-      const skip = (page - 1) * limit;
-  
-      const blogs = await prisma.blog.findMany({
-        skip,
-        take: limit,
-        include: { blocks: true },
-        orderBy: { createdAt: "desc" },
-      });
-  
-      const totalBlogs = await prisma.blog.count();
-  
-      res.json({
-        totalBlogs,
-        currentPage: page,
-        totalPages: Math.ceil(totalBlogs / limit),
-        blogs,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Failed to fetch blogs" });
-    }
-  });
+//       res.json({
+//         totalBlogs,
+//         currentPage: page,
+//         totalPages: Math.ceil(totalBlogs / limit),
+//         blogs,
+//       });
+//     } catch (err) {
+//       console.error(err);
+//       res.status(500).json({ error: "Failed to fetch blogs" });
+//     }
+//   });
   
 
-  app.get("/api/blogs/:blogId/similar", async (req, res) => {
-    const { blogId } = req.params;
+
+//   app.post("/api/blogs", async (req, res) => {
+//     try {
+//       const {page,limit} = req.body; // frontend sends { page, limit }
+//       const skip = (page - 1) * limit;
   
+//       const blogs = await prisma.blog.findMany({
+//         skip,
+//         take: limit,
+//         include: { blocks: true },
+//         orderBy: { createdAt: "desc" },
+//       });
+  
+//       const totalBlogs = await prisma.blog.count();
+  
+//       res.json({
+//         totalBlogs,
+//         currentPage: page,
+//         totalPages: Math.ceil(totalBlogs / limit),
+//         blogs,
+//       });
+//     } catch (err) {
+//       console.error(err);
+//       res.status(500).json({ error: "Failed to fetch blogs" });
+//     }
+//   });
+  
+
+//   app.get("/api/blogs/:blogId/similar", async (req, res) => {
+//     const { blogId } = req.params;
+  
+//     try {
+//       console.log("🔍 Fetching blog with ID:", blogId);
+  
+//       const blog = await prisma.blog.findUnique({
+//         where: { blogId },
+//         include: { 
+//           blocks: {
+//             orderBy: { order: 'asc' }
+//           }
+//         },
+//       });
+  
+//       if (!blog) {
+//         console.log("❌ Blog not found");
+//         return res.status(404).json({ error: "Blog not found" });
+//       }
+  
+//       console.log("✅ Blog found:", blog.title);
+  
+  
+//       // -------------------------------------------------------------
+//       //     FETCH RANDOM BLOGS (Shuffled) EXCLUDING CURRENT BLOG
+//       // -------------------------------------------------------------
+//       console.log("🔍 Fetching random related blogs...");
+  
+//       let allBlogs = await prisma.blog.findMany({
+//         where: {
+//           NOT: { blogId: blog.blogId }
+//         },
+//         select: {
+//           blogId: true,
+//           title: true,
+//           thumbnail: true,
+//           updatedAt:true,
+//           createdAt:true
+//         }
+//       });
+  
+//       // Shuffle array (Fisher-Yates shuffle)
+//       allBlogs = allBlogs.sort(() => Math.random() - 0.5);
+  
+//       // Take any 4 random blogs
+//       const randomBlogs = allBlogs.slice(0, 4);
+  
+//       console.log("📌 Random blogs count:", randomBlogs.length);
+  
+//       // -------------------------------------------------------------
+  
+//       res.json({
+//         blog,
+//         relatedBlogs: randomBlogs
+//       });
+  
+//     } catch (err) {
+//       console.error("GET Blog Error:", err);
+//       res.status(500).json({ error: "Failed to fetch blog" });
+//     }
+//   });
+  
+
+// app.get("/api/blogs/:blogId", async (req, res) => {
+//   const { blogId } = req.params;
+
+//   try {
+//     const blog = await prisma.blog.findUnique({
+//       where: { blogId },
+//       include: { 
+//         blocks: {
+//           orderBy: { order: 'asc' }
+//         }
+//       },
+//     });
+
+//     if (!blog) {
+//       return res.status(404).json({ error: "Blog not found" });
+//     }
+
+//     res.json(blog);
+//   } catch (err) {
+//     console.error("GET Blog Error:", err);
+//     res.status(500).json({ error: "Failed to fetch blog" });
+//   }
+// })
+
+// app.put(
+//   "/api/blogs/:blogId",
+//   upload.fields([
+//     { name: "images", maxCount: 50 },
+//     { name: "thumbnail", maxCount: 1 },
+//   ]),
+//   async (req, res) => {
+
+//     console.log("🟡 PUT /api/blogs/:blogId CALLED");
+
+//     const { blogId } = req.params;
+//     console.log("👉 blogId:", blogId);
+
+//     console.log("👉 Incoming body:", req.body);
+//     console.log("👉 Incoming files:", req.files);
+
+//     try {
+//       console.log("🔍 Checking existing blog…");
+
+//       const existingBlog = await prisma.blog.findUnique({
+//         where: { blogId },
+//         include: { blocks: true },
+//       });
+
+//       console.log("👉 Existing blog:", existingBlog);
+
+//       if (!existingBlog) {
+//         console.log("❌ Blog not found");
+//         return res.status(404).json({ message: "Blog not found" });
+//       }
+
+//       console.log("🟦 Updating TITLE…");
+//       let updatedThumbnail = existingBlog.thumbnail;
+
+//       // -------------------------------
+//       // THUMBNAIL UPDATE
+//       // -------------------------------
+//       if (req.files.thumbnail) {
+//         console.log("🟧 Thumbnail received: ", req.files.thumbnail[0]);
+
+//         updatedThumbnail = "/uploads/" + req.files.thumbnail[0].filename;
+
+//         console.log("🟩 New Thumbnail URL:", updatedThumbnail);
+//       } else {
+//         console.log("ℹ️ No new thumbnail uploaded");
+//       }
+
+//       // -------------------------------
+//       // IMAGES UPDATE FOR BLOCKS
+//       // -------------------------------
+//       let imageMap = {};
+
+//       if (req.files.images) {
+//         console.log("🟧 Images received for blocks:", req.files.images);
+
+//         req.files.images.forEach((file, index) => {
+//           console.log(`👉 Mapping image ${index}`);
+//           imageMap[index] = "/uploads/" + file.filename;
+
+//           console.log("👉 Stored:", imageMap[index]);
+//         });
+//       }
+
+//       // -------------------------------
+//       // PARSE BLOCKS JSON
+//       // -------------------------------
+//       console.log("📦 Parsing blocks JSON…");
+
+//       let blocksData = JSON.parse(req.body.blocks);
+//       console.log("👉 Parsed blocks:", blocksData);
+
+//       // -------------------------------
+//       // DELETE OLD BLOCKS
+//       // -------------------------------
+//       console.log("🗑 Deleting existing blocks…");
+
+//       await prisma.block.deleteMany({
+//         where: { blogId },
+//       });
+
+//       console.log("✔ Old blocks removed.");
+
+//       // -------------------------------
+//       // CREATE NEW BLOCKS
+//       // -------------------------------
+//       console.log("➕ Creating new blocks…");
+
+//       const newBlocks = await prisma.$transaction(
+//         blocksData.map((block, index) => {
+//           console.log(`👉 Creating Block ${index}:`, block);
+
+//           return prisma.block.create({
+//             data: {
+//               type: block.type,
+//               value: block.value || null,
+//               imageUrl: imageMap[index] || null,
+//               order: block.order,
+//               blogId,
+//             },
+//           });
+//         })
+//       );
+
+//       console.log("✔ Blocks created:", newBlocks);
+
+//       // -------------------------------
+//       // UPDATE BLOG
+//       // -------------------------------
+//       console.log("🟦 Updating blog…");
+
+//       const updatedBlog = await prisma.blog.update({
+//         where: { blogId },
+//         data: {
+//           title: req.body.title,
+//           thumbnail: updatedThumbnail,
+//         },
+//         include: { blocks: true },
+//       });
+
+//       console.log("✔ Blog updated:", updatedBlog);
+
+//       return res.json({
+//         message: "Blog updated successfully!",
+//         data: updatedBlog,
+//       });
+
+//     } catch (error) {
+//       console.log("❌ Error:", error);
+//       return res.status(500).json({ error: error.message });
+//     }
+//   }
+// );
+
+
+
+// app.delete("/api/blogs/:blogId", async (req, res) => {
+//   console.log("🟡 DELETE /api/blogs called");
+
+//   const { blogId } = req.params;
+
+//   try {
+//     console.log("👉 blogId:", blogId);
+
+//     // Fetch blog + blocks (thumbnail + block images)
+//     console.log("🔍 Fetching blog and blocks…");
+//     const blog = await prisma.blog.findUnique({
+//       where: { blogId },
+//       include: { blocks: true },
+//     });
+
+//     if (!blog) {
+//       console.log("❌ Blog not found");
+//       return res.status(404).json({ error: "Blog not found" });
+//     }
+
+//     console.log("✅ Blog found");
+
+//     // -------------------------------------
+//     // COLLECT IMAGES TO DELETE
+//     // -------------------------------------
+//     let toDelete = [];
+
+//     // 1. Thumbnail
+//     console.log("📌 Thumbnail:", blog.thumbnail);
+//     if (blog.thumbnail && blog.thumbnail !== "null") {
+//       toDelete.push(blog.thumbnail);
+//     }
+
+//     // 2. Block images (imageUrl)
+//     console.log("🧱 Blocks count:", blog.blocks.length);
+
+//     blog.blocks.forEach((block, index) => {
+//       console.log(`🔎 Block ${index + 1} imageUrl:`, block.imageUrl);
+
+//       if (block.imageUrl && block.imageUrl !== "null") {
+//         toDelete.push(block.imageUrl);
+//       }
+//     });
+
+//     console.log("🖼 Total Images to delete:", toDelete.length);
+//     console.log(toDelete);
+
+//     // -------------------------------------
+//     // DELETE IMAGES FROM S3
+//     // -------------------------------------
+//     for (const url of toDelete) {
+//       try {
+//         if (!url) continue;
+
+//         console.log("🧹 Preparing delete:", url);
+
+//         // Extract S3 key
+//         const keyFromUrl = decodeURIComponent(url.split("/").pop());
+
+//         const fileKey = keyFromUrl.startsWith("Dashboard/")
+//           ? keyFromUrl
+//           : `Dashboard/${keyFromUrl}`;
+
+//         console.log("🗑 S3 Delete key:", fileKey);
+
+//         await s3Client.send(
+//           new DeleteObjectCommand({
+//             Bucket: config.S3_BUCKET_NAME,
+//             Key: fileKey,
+//           })
+//         );
+
+//         console.log("✅ Deleted from S3:", fileKey);
+//       } catch (s3Err) {
+//         console.log("❌ S3 Delete failed:", s3Err);
+//       }
+//     }
+
+//     // -------------------------------------
+//     // DELETE FROM DATABASE
+//     // -------------------------------------
+//     console.log("🧹 Deleting blocks from DB…");
+//     await prisma.block.deleteMany({ where: { blogId } });
+//     console.log("✅ Blocks deleted");
+
+//     console.log("🧹 Deleting blog…");
+//     await prisma.blog.delete({ where: { blogId } });
+//     console.log("✅ Blog deleted from DB");
+
+//     res.json({ message: "Blog + images deleted successfully" });
+
+//   } catch (err) {
+//     console.error("❌ Error deleting blog:", err);
+//     res.status(500).json({ error: "Failed to delete blog" });
+//   }
+// });
+
+
+app.post(
+  "/api/blogs",
+  upload.fields([
+    { name: "thumbnail", maxCount: 1 },
+    { name: "images", maxCount: 50 },
+  ]),
+  async (req, res) => {
     try {
-      console.log("🔍 Fetching blog with ID:", blogId);
-  
-      const blog = await prisma.blog.findUnique({
-        where: { blogId },
-        include: { 
-          blocks: {
-            orderBy: { order: 'asc' }
-          }
-        },
-      });
-  
-      if (!blog) {
-        console.log("❌ Blog not found");
-        return res.status(404).json({ error: "Blog not found" });
+      const { title, author, userId, content } = req.body;
+      const parsedContent = JSON.parse(content);
+
+      console.log("Parsed:", parsedContent);
+
+      console.log(req.files)
+
+      // ----- Thumbnail -----
+      let thumbnail = null;
+      if (req.files["thumbnail"]) {
+        thumbnail = `${req.files["thumbnail"][0].location}`;
       }
-  
-      console.log("✅ Blog found:", blog.title);
-  
-  
-      // -------------------------------------------------------------
-      //     FETCH RANDOM BLOGS (Shuffled) EXCLUDING CURRENT BLOG
-      // -------------------------------------------------------------
-      console.log("🔍 Fetching random related blogs...");
-  
-      let allBlogs = await prisma.blog.findMany({
-        where: {
-          NOT: { blogId: blog.blogId }
-        },
-        select: {
-          blogId: true,
-          title: true,
-          thumbnail: true,
-          updatedAt:true,
-          createdAt:true
-        }
-      });
-  
-      // Shuffle array (Fisher-Yates shuffle)
-      allBlogs = allBlogs.sort(() => Math.random() - 0.5);
-  
-      // Take any 4 random blogs
-      const randomBlogs = allBlogs.slice(0, 4);
-  
-      console.log("📌 Random blogs count:", randomBlogs.length);
-  
-      // -------------------------------------------------------------
-  
-      res.json({
-        blog,
-        relatedBlogs: randomBlogs
-      });
-  
-    } catch (err) {
-      console.error("GET Blog Error:", err);
-      res.status(500).json({ error: "Failed to fetch blog" });
-    }
-  });
-  
 
+      // ----- Image Blocks -----
+      if (req.files["images"]) {
+        req.files["images"].forEach((img, index) => {
+          const block = parsedContent.find(
+            (b) => b.type === "image" && b.value == index
+          );
+          if (block) block.value = `${img.location}`;
+        });
+      }
+
+      const blog = await prisma.blog.create({
+        data: {
+          title,
+          author,
+          userId,
+          thumbnail,
+          content: parsedContent,
+        },
+      });
+
+      res.json(blog);
+    } catch (err) {
+      console.log("POST ERROR", err);
+      res.status(500).json({ error: "Failed to create blog" });
+    }
+  }
+);
+
+
+// ==================================
+//          GET BLOG BY ID
+// ==================================
+app.get("/api/blogs", async (req, res) => {
+  try {
+    const blog = await prisma.blog.findMany();
+
+    if (!blog) return res.status(404).json({ error: "Blog not found" });
+
+    res.json(blog);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching blog" });
+  }
+});
 
 app.get("/api/blogs/:blogId", async (req, res) => {
   const { blogId } = req.params;
@@ -1198,11 +1518,6 @@ app.get("/api/blogs/:blogId", async (req, res) => {
   try {
     const blog = await prisma.blog.findUnique({
       where: { blogId },
-      include: { 
-        blocks: {
-          orderBy: { order: 'asc' }
-        }
-      },
     });
 
     if (!blog) {
@@ -1211,319 +1526,74 @@ app.get("/api/blogs/:blogId", async (req, res) => {
 
     res.json(blog);
   } catch (err) {
-    console.error("GET Blog Error:", err);
-    res.status(500).json({ error: "Failed to fetch blog" });
+    res.status(500).json({ error: "Error fetching the blog" });
   }
 });
 
-// ================================================
-// UPDATE BLOG
-// ================================================
 
-
-
+// ==================================
+//          UPDATE BLOG (PUT)
+// ==================================
 app.put(
   "/api/blogs/:blogId",
   upload.fields([
-    { name: "images", maxCount: 50 },
     { name: "thumbnail", maxCount: 1 },
+    { name: "images", maxCount: 50 },
   ]),
   async (req, res) => {
-    console.log("🟡 PUT /api/blogs/:blogId called");
-
-    const { blogId } = req.params;
-    console.log("👉 blogId:", blogId);
-
     try {
-      console.log("📥 Raw req.body.data:", req.body.data);
+      const { title, author, content } = req.body;
+      const parsedContent = JSON.parse(content);
 
-      const { title, blocks } = JSON.parse(req.body.data);
-      console.log("📝 Title:", title);
-      console.log("🧱 Blocks:", blocks);
-
-      const oldBlog = await prisma.blog.findUnique({
-        where: { blogId },
-        include: { blocks: true },
-      });
-
-      console.log("📚 Old Blog:", oldBlog);
-
-      if (!oldBlog) {
-        console.log("❌ Blog Not Found");
-        return res.status(404).json({ error: "Blog not found" });
-      }
-
-      //=====================
-      // 🔵 THUMBNAIL SECTION
-      //=====================
-      let finalThumbnail = oldBlog.thumbnail;
-      console.log("🖼 Old Thumbnail:", finalThumbnail);
+      let thumbnail = undefined;
 
       if (req.files["thumbnail"]) {
-        console.log("🆕 Thumbnail Uploaded");
-
-        const newThumb = req.files["thumbnail"][0];
-        finalThumbnail = newThumb.location;
-
-        console.log("📸 New Thumbnail URL:", finalThumbnail);
-
-        // 🔥 DELETE OLD THUMBNAIL INLINE
-        if (oldBlog.thumbnail) {
-          console.log("🗑 Deleting Old Thumbnail from S3:", oldBlog.thumbnail);
-
-          const thumbKey = decodeURIComponent(oldBlog.thumbnail.split("/").pop());
-          console.log("🔑 Extracted Key:", thumbKey);
-
-          await s3Client.send(
-            new DeleteObjectCommand({
-              Bucket: process.env.AWS_BUCKET_NAME,
-              Key: `Dashboard/${thumbKey}`,
-            })
-          );
-
-          console.log("🗑 Thumbnail Deleted from S3");
-        }
+        thumbnail = `${req.files["thumbnail"][0].location}`;
       }
 
-      //=====================
-      // 🔵 BLOCKS SECTION
-      //=====================
-
-      const existingBlocks = oldBlog.blocks;
-      console.log("📦 Existing Blocks:", existingBlocks);
-
-      const incomingIds = blocks.map((b) => b.blockId).filter(Boolean);
-      console.log("🔎 Incoming IDs:", incomingIds);
-
-      // ⛔ FIND DELETED BLOCKS
-      const deletedBlocks = existingBlocks.filter(
-        (old) => !incomingIds.includes(old.blockId)
-      );
-
-      console.log("🗑 Blocks To Delete:", deletedBlocks);
-
-      // DELETE DELETED BLOCKS INLINE
-      for (const del of deletedBlocks) {
-        console.log(`⛔ Deleting Block ${del.blockId}`);
-
-        if (del.imageUrl) {
-          console.log("🗑 Deleting old image from S3:", del.imageUrl);
-
-          const delKey = decodeURIComponent(del.imageUrl.split("/").pop());
-          console.log("🔑 Extracted Key:", delKey);
-
-          await s3Client.send(
-            new DeleteObjectCommand({
-              Bucket: process.env.AWS_BUCKET_NAME,
-              Key: `Dashboard/${delKey}`,
-            })
+      if (req.files["images"]) {
+        req.files["images"].forEach((img, index) => {
+          const block = parsedContent.find(
+            (b) => b.type === "image" && b.value == index
           );
-
-          console.log("🗑 Image Deleted From S3");
-        }
-
-        await prisma.block.delete({
-          where: { blockId: del.blockId },
+          if (block) block.value = `${img.location}`;
         });
-
-        console.log(`🗑 Block ${del.blockId} Deleted From DB`);
       }
 
-      //=====================
-      // 🔵 UPDATE / INSERT BLOCKS
-      //=====================
-
-      let imageFiles = req.files["images"] || [];
-      console.log("🖼 Uploaded Image Files:", imageFiles);
-
-      for (const block of blocks) {
-        console.log("➡ Processing Block:", block);
-
-        const oldBlock = existingBlocks.find((b) => b.blockId === block.blockId);
-        console.log("🔎 Old Block:", oldBlock);
-
-        // CASE: Updating image block
-        if (block.type === "image" && block.newImageIndex !== undefined) {
-          const newImgFile = imageFiles[block.newImageIndex];
-          console.log("🆕 New Uploaded Image:", newImgFile.location);
-
-          // 🔥 DELETE OLD IMAGE INLINE
-          if (oldBlock && oldBlock.imageUrl) {
-            console.log("🗑 Deleting old image:", oldBlock.imageUrl);
-
-            const oldKey = decodeURIComponent(oldBlock.imageUrl.split("/").pop());
-            console.log("🔑 Extracted Key:", oldKey);
-
-            await s3Client.send(
-              new DeleteObjectCommand({
-                Bucket: process.env.AWS_BUCKET_NAME,
-                Key: `Dashboard/${oldKey}`,
-              })
-            );
-
-            console.log("🗑 Old Block Image Deleted From S3");
-          }
-
-          // Assign NEW image URL
-          block.imageUrl = newImgFile.location;
-          console.log("📸 Updated Block Image URL:", block.imageUrl);
-        }
-
-        // UPDATE EXISTING BLOCK
-        if (block.blockId) {
-          console.log(`🔧 Updating Block ${block.blockId}`);
-
-          await prisma.block.update({
-            where: { blockId: block.blockId },
-            data: {
-              type: block.type,
-              value: block.value || null,
-              imageUrl: block.imageUrl || null,
-              order: block.order,
-            },
-          });
-
-          console.log(`✅ Block ${block.blockId} Updated`);
-        } else {
-          // CREATE NEW BLOCK
-          console.log("🆕 Creating New Block");
-
-          await prisma.block.create({
-            data: {
-              type: block.type,
-              value: block.value || null,
-              imageUrl: block.imageUrl || null,
-              order: block.order,
-              blogId,
-            },
-          });
-
-          console.log("✅ New Block Created");
-        }
-      }
-
-      //=====================
-      // 🔵 FINAL BLOG UPDATE
-      //=====================
-
-      console.log("📝 Updating Blog Title + Thumbnail");
-
-      const updatedBlog = await prisma.blog.update({
-        where: { blogId },
+      const updated = await prisma.blog.update({
+        where: { blogId: req.params.blogId },
         data: {
           title,
-          thumbnail: finalThumbnail,
+          author,
+          ...(thumbnail && { thumbnail }),
+          content: parsedContent,
         },
       });
 
-      console.log("🎉 Blog Updated Successfully:", updatedBlog);
-
-      res.json({ message: "Blog updated", updatedBlog });
+      res.json(updated);
     } catch (err) {
-      console.error("❌ PUT Blog Error:", err);
+      console.log("PUT ERROR", err);
       res.status(500).json({ error: "Failed to update blog" });
     }
   }
 );
 
 
-  
+// ==================================
+//          DELETE BLOG
+// ==================================
 app.delete("/api/blogs/:blogId", async (req, res) => {
-  console.log("🟡 DELETE /api/blogs called");
-
-  const { blogId } = req.params;
-
   try {
-    console.log("👉 blogId:", blogId);
-
-    // Fetch blog + blocks (thumbnail + block images)
-    console.log("🔍 Fetching blog and blocks…");
-    const blog = await prisma.blog.findUnique({
-      where: { blogId },
-      include: { blocks: true },
+    await prisma.blog.delete({
+      where: { blogId: req.params.blogId },
     });
 
-    if (!blog) {
-      console.log("❌ Blog not found");
-      return res.status(404).json({ error: "Blog not found" });
-    }
-
-    console.log("✅ Blog found");
-
-    // -------------------------------------
-    // COLLECT IMAGES TO DELETE
-    // -------------------------------------
-    let toDelete = [];
-
-    // 1. Thumbnail
-    console.log("📌 Thumbnail:", blog.thumbnail);
-    if (blog.thumbnail && blog.thumbnail !== "null") {
-      toDelete.push(blog.thumbnail);
-    }
-
-    // 2. Block images (imageUrl)
-    console.log("🧱 Blocks count:", blog.blocks.length);
-
-    blog.blocks.forEach((block, index) => {
-      console.log(`🔎 Block ${index + 1} imageUrl:`, block.imageUrl);
-
-      if (block.imageUrl && block.imageUrl !== "null") {
-        toDelete.push(block.imageUrl);
-      }
-    });
-
-    console.log("🖼 Total Images to delete:", toDelete.length);
-    console.log(toDelete);
-
-    // -------------------------------------
-    // DELETE IMAGES FROM S3
-    // -------------------------------------
-    for (const url of toDelete) {
-      try {
-        if (!url) continue;
-
-        console.log("🧹 Preparing delete:", url);
-
-        // Extract S3 key
-        const keyFromUrl = decodeURIComponent(url.split("/").pop());
-
-        const fileKey = keyFromUrl.startsWith("Dashboard/")
-          ? keyFromUrl
-          : `Dashboard/${keyFromUrl}`;
-
-        console.log("🗑 S3 Delete key:", fileKey);
-
-        await s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: config.S3_BUCKET_NAME,
-            Key: fileKey,
-          })
-        );
-
-        console.log("✅ Deleted from S3:", fileKey);
-      } catch (s3Err) {
-        console.log("❌ S3 Delete failed:", s3Err);
-      }
-    }
-
-    // -------------------------------------
-    // DELETE FROM DATABASE
-    // -------------------------------------
-    console.log("🧹 Deleting blocks from DB…");
-    await prisma.block.deleteMany({ where: { blogId } });
-    console.log("✅ Blocks deleted");
-
-    console.log("🧹 Deleting blog…");
-    await prisma.blog.delete({ where: { blogId } });
-    console.log("✅ Blog deleted from DB");
-
-    res.json({ message: "Blog + images deleted successfully" });
-
+    res.json({ message: "Blog deleted successfully" });
   } catch (err) {
-    console.error("❌ Error deleting blog:", err);
-    res.status(500).json({ error: "Failed to delete blog" });
+    res.status(500).json({ error: "Error deleting blog" });
   }
 });
+
 
 
 
