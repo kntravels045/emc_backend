@@ -1424,7 +1424,7 @@ app.post("/api/add-blogs",upload.fields([{ name: "thumbnail", maxCount: 1 },
 
 
 app.post(
-  "/api/blogs",
+  "/api/add-blogs",
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "images", maxCount: 50 },
