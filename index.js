@@ -966,102 +966,102 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
 // --------------------------------
 // CREATE NEW BLOG (with images)
 // --------------------------------
-app.post("/api/add-blogs",upload.fields([{ name: "thumbnail", maxCount: 1 },
-  { name: "images", maxCount: 20 }]),async (req, res) => {
-    // console.log("🟦 STEP 0: API HIT - /api/add-blogs");
+// app.post("/api/add-blogs",upload.fields([{ name: "thumbnail", maxCount: 1 },
+//   { name: "images", maxCount: 20 }]),async (req, res) => {
+//     // console.log("🟦 STEP 0: API HIT - /api/add-blogs");
 
-    try {
-      // ------------------------------------------------
-      // console.log("🟨 STEP 1: RAW req.body =", req.body);
-      // console.log("🟨 STEP 1: RAW req.files =", req.files);
+//     try {
+//       // ------------------------------------------------
+//       // console.log("🟨 STEP 1: RAW req.body =", req.body);
+//       // console.log("🟨 STEP 1: RAW req.files =", req.files);
 
-      // 1️⃣ Extract JSON
-      // console.log("🟧 STEP 2: Parsing req.body.data...");
-      const { title, userId, blocks } = JSON.parse(req.body.data);
+//       // 1️⃣ Extract JSON
+//       // console.log("🟧 STEP 2: Parsing req.body.data...");
+//       const { title, userId, blocks } = JSON.parse(req.body.data);
 
-      // console.log("🟩 STEP 2 RESULT:");
-      // console.log("   ➤ Title:", title);
-      // console.log("   ➤ User ID:", userId);
-      // console.log("   ➤ Blocks:", blocks);
+//       // console.log("🟩 STEP 2 RESULT:");
+//       // console.log("   ➤ Title:", title);
+//       // console.log("   ➤ User ID:", userId);
+//       // console.log("   ➤ Blocks:", blocks);
 
-      // 2️⃣ Extract THUMBNAIL
-      // console.log("🟦 STEP 3: Extracting Thumbnail...");
-      const thumbnailUrl = req.files.thumbnail
-        ? req.files.thumbnail[0].location
-        : null;
+//       // 2️⃣ Extract THUMBNAIL
+//       // console.log("🟦 STEP 3: Extracting Thumbnail...");
+//       const thumbnailUrl = req.files.thumbnail
+//         ? req.files.thumbnail[0].location
+//         : null;
 
-      // console.log("🟩 STEP 3 RESULT: Thumbnail URL =", thumbnailUrl);
+//       // console.log("🟩 STEP 3 RESULT: Thumbnail URL =", thumbnailUrl);
 
-      // 3️⃣ Extract IMAGES for blocks
-      // console.log("🟦 STEP 4: Extracting Block Images...");
-      const imageUploads = req.files.images
-        ? req.files.images.map((f) => f.location)
-        : [];
+//       // 3️⃣ Extract IMAGES for blocks
+//       // console.log("🟦 STEP 4: Extracting Block Images...");
+//       const imageUploads = req.files.images
+//         ? req.files.images.map((f) => f.location)
+//         : [];
 
-      // console.log("🟩 STEP 4 RESULT: Block Image URLs =", imageUploads);
+//       // console.log("🟩 STEP 4 RESULT: Block Image URLs =", imageUploads);
 
-      // 4️⃣ Build final blocks
-      // console.log("🟦 STEP 5: Building finalBlocks array...");
-      let imageIndex = 0;
+//       // 4️⃣ Build final blocks
+//       // console.log("🟦 STEP 5: Building finalBlocks array...");
+//       let imageIndex = 0;
 
-      const finalBlocks = blocks.map((block, index) => {
-        console.log(`---- Processing Block ${index} ----`);
-        console.log("Block Data:", block);
+//       const finalBlocks = blocks.map((block, index) => {
+//         console.log(`---- Processing Block ${index} ----`);
+//         console.log("Block Data:", block);
 
-        if (block.type === "image") {
-          const imageUrl = imageUploads[imageIndex] || null;
-          console.log(`🟡 Assigning image URL: ${imageUrl}`);
-          imageIndex++;
+//         if (block.type === "image") {
+//           const imageUrl = imageUploads[imageIndex] || null;
+//           console.log(`🟡 Assigning image URL: ${imageUrl}`);
+//           imageIndex++;
 
-          return {
-            type: "image",
-            value: null,
-            imageUrl,
-            order: index
-          };
-        }
+//           return {
+//             type: "image",
+//             value: null,
+//             imageUrl,
+//             order: index
+//           };
+//         }
 
-        // console.log(`🔵 Non-image block: assigning value = ${block.value}`);
-        return {
-          type: block.type,
-          value: block.value || null,
-          imageUrl: null,
-          order: index
-        };
-      });
+//         // console.log(`🔵 Non-image block: assigning value = ${block.value}`);
+//         return {
+//           type: block.type,
+//           value: block.value || null,
+//           imageUrl: null,
+//           order: index
+//         };
+//       });
 
-      // console.log("🟩 STEP 5 RESULT: finalBlocks =", finalBlocks);
+//       // console.log("🟩 STEP 5 RESULT: finalBlocks =", finalBlocks);
 
-      // // 5️⃣ Create Blog in Prisma
-      // console.log("🟦 STEP 6: Saving into database using Prisma...");
+//       // // 5️⃣ Create Blog in Prisma
+//       // console.log("🟦 STEP 6: Saving into database using Prisma...");
 
-      const blog = await prisma.blog.create({
-        data: {
-          title,
-          thumbnail: thumbnailUrl,
-          userId,
-          blocks: {
-            create: finalBlocks
-          }
-        },
-        include: { blocks: true }
-      });
+//       const blog = await prisma.blog.create({
+//         data: {
+//           title,
+//           thumbnail: thumbnailUrl,
+//           userId,
+//           blocks: {
+//             create: finalBlocks
+//           }
+//         },
+//         include: { blocks: true }
+//       });
 
-      // console.log("🟩 STEP 6 RESULT: Blog Saved Successfully!");
-      // console.log(blog);
+//       // console.log("🟩 STEP 6 RESULT: Blog Saved Successfully!");
+//       // console.log(blog);
 
-      return res.status(201).json({
-        success: true,
-        message: "Blog created successfully",
-        // blog
-      });
+//       return res.status(201).json({
+//         success: true,
+//         message: "Blog created successfully",
+//         // blog
+//       });
 
-    } catch (err) {
-      console.error("❌ STEP ERROR:", err);
-      res.status(500).json({ success: false, error: err.message });
-    }
-  }
-);
+//     } catch (err) {
+//       console.error("❌ STEP ERROR:", err);
+//       res.status(500).json({ success: false, error: err.message });
+//     }
+//   }
+// );
 
 
   
@@ -1430,6 +1430,7 @@ app.post(
     { name: "images", maxCount: 50 },
   ]),
   async (req, res) => {
+    console.log(req.body)
     try {
       const { title, author, userId, content } = req.body;
       const parsedContent = JSON.parse(content);
@@ -1437,6 +1438,7 @@ app.post(
       console.log("Parsed:", parsedContent);
 
       console.log(req.files)
+      
 
       // ----- Thumbnail -----
       let thumbnail = null;
