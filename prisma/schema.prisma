@@ -94,7 +94,8 @@ model Blog {
   blogId      String   @unique  @id @default(cuid())
   title       String
   thumbnail   String?                 
-  content    Json                          
+  content    Json    
+  order      String?                      
   author     String?
   userId      String
   user        User     @relation(fields: [userId], references: [userId])
