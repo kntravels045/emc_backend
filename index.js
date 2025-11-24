@@ -1473,31 +1473,37 @@ app.post(
 );
 
 
-  app.post("/api/blogs", async (req, res) => {
-    try {
-      const {page,limit} = req.body; // frontend sends { page, limit }
-      const skip = (page - 1) * limit;
-  
-      const blogs = await prisma.blog.findMany({
-        skip,
-        take: limit,
-        include: { blocks: true },
-        orderBy: { createdAt: "desc" },
-      });
-  
-      const totalBlogs = await prisma.blog.count();
-  
-      res.json({
-        totalBlogs,
-        currentPage: page,
-        totalPages: Math.ceil(totalBlogs / limit),
-        blogs,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Failed to fetch blogs" });
-    }
-  });
+app.post("/api/blogs", async (req, res) => {
+  try {
+    const { page, limit } = req.body;
+    const skip = (page - 1) * limit;
+
+    const blogs = await prisma.blog.findMany({
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      select: {
+        blogId: true,
+        title: true,
+        thumbnail: true,
+        author: true,
+        createdAt: true,
+      },
+    });
+
+    const totalBlogs = await prisma.blog.count();
+
+    res.json({
+      totalBlogs,
+      currentPage: page,
+      totalPages: Math.ceil(totalBlogs / limit),
+      blogs,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch blogs" });
+  }
+});
 
 app.get("/api/blogs/:blogId", async (req, res) => {
   const { blogId } = req.params;
