@@ -83,6 +83,7 @@ CREATE TABLE "Blog" (
     "title" TEXT NOT NULL,
     "thumbnail" TEXT,
     "content" JSONB NOT NULL,
+    "order" TEXT,
     "author" TEXT,
     "userId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
