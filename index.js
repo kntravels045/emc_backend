@@ -1477,7 +1477,7 @@ app.post("/api/blogs", async (req, res) => {
   try {
     const { page, limit } = req.body;
     const skip = (page - 1) * limit;
-
+// const
     const blogs = await prisma.blog.findMany({
       skip,
       take: limit,
