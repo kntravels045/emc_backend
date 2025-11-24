@@ -1100,31 +1100,7 @@ app.post("/api/add-blogs",upload.fields([{ name: "thumbnail", maxCount: 1 },
   
 
 
-//   app.post("/api/blogs", async (req, res) => {
-//     try {
-//       const {page,limit} = req.body; // frontend sends { page, limit }
-//       const skip = (page - 1) * limit;
-  
-//       const blogs = await prisma.blog.findMany({
-//         skip,
-//         take: limit,
-//         include: { blocks: true },
-//         orderBy: { createdAt: "desc" },
-//       });
-  
-//       const totalBlogs = await prisma.blog.count();
-  
-//       res.json({
-//         totalBlogs,
-//         currentPage: page,
-//         totalPages: Math.ceil(totalBlogs / limit),
-//         blogs,
-//       });
-//     } catch (err) {
-//       console.error(err);
-//       res.status(500).json({ error: "Failed to fetch blogs" });
-//     }
-//   });
+
   
 
 //   app.get("/api/blogs/:blogId/similar", async (req, res) => {
@@ -1497,20 +1473,15 @@ app.post(
 );
 
 
-
-  app.get("/api/blogs", async (req, res) => {
+  app.post("/api/blogs", async (req, res) => {
     try {
-      // Get from query → /api/blogs?page=1&limit=10
-      let { page, limit } = req.query;
-  
-      page = parseInt(page) 
-      limit = parseInt(limit)
-  
+      const {page,limit} = req.body; // frontend sends { page, limit }
       const skip = (page - 1) * limit;
   
       const blogs = await prisma.blog.findMany({
         skip,
         take: limit,
+        include: { blocks: true },
         orderBy: { createdAt: "desc" },
       });
   
