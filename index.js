@@ -1475,6 +1475,36 @@ app.post(
 );
 
 
+  app.get("/api/blogs", async (req, res) => {
+    try {
+      // Get from query → /api/blogs?page=1&limit=10
+      let { page, limit } = req.query;
+  
+      page = parseInt(page) 
+      limit = parseInt(limit)
+  
+      const skip = (page - 1) * limit;
+  
+      const blogs = await prisma.blog.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      });
+  
+      const totalBlogs = await prisma.blog.count();
+  
+      res.json({
+        totalBlogs,
+        currentPage: page,
+        totalPages: Math.ceil(totalBlogs / limit),
+        blogs,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch blogs" });
+    }
+  });
+
 app.post("/api/blogs", async (req, res) => {
   try {
     const { page, limit } = req.body;
@@ -1524,6 +1554,61 @@ app.get("/api/blogs/:blogId", async (req, res) => {
     res.status(500).json({ error: "Error fetching the blog" });
   }
 });
+
+app.get("/api/blogs/:blogId/similar", async (req, res) => {
+  const { blogId } = req.params;
+
+  try {
+    console.log("🔍 Fetching blog with ID:", blogId);
+
+    const blog = await prisma.blog.findUnique({
+      where: { blogId },
+      include: { 
+        blocks: {
+          orderBy: { order: 'asc' }
+        }
+      },
+    });
+
+    if (!blog) {
+      console.log("❌ Blog not found");
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    console.log("✅ Blog found:", blog.title);
+
+    // Fetch all blogs excluding current one
+    let allBlogs = await prisma.blog.findMany({
+      where: {
+        NOT: { blogId: blog.blogId }
+      },
+      select: {
+        blogId: true,
+        title: true,
+        thumbnail: true,
+        updatedAt:true,
+        createdAt:true
+      }
+    });
+
+    // Shuffle and select 4 random blogs
+    allBlogs = allBlogs.sort(() => Math.random() - 0.5);
+    const randomBlogs = allBlogs.slice(0, 4);
+
+    console.log("📌 Random blogs count:", randomBlogs.length);
+
+    res.json({
+      blog,
+      relatedBlogs: randomBlogs
+    });
+
+  } catch (err) {
+    console.error("GET Blog Error:", err);
+    res.status(500).json({ error: "Failed to fetch blog" });
+  }
+});
+
+
 
 
 // ==================================
