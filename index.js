@@ -1505,6 +1505,7 @@ app.post(
     }
   });
 
+  
 app.post("/api/blogs", async (req, res) => {
   try {
     const { page, limit } = req.body;
@@ -1561,13 +1562,9 @@ app.get("/api/blogs/:blogId/similar", async (req, res) => {
   try {
     console.log("🔍 Fetching blog with ID:", blogId);
 
+    // Fetch blog without blocks, content is JSON field
     const blog = await prisma.blog.findUnique({
       where: { blogId },
-      include: { 
-        blocks: {
-          orderBy: { order: 'asc' }
-        }
-      },
     });
 
     if (!blog) {
@@ -1607,6 +1604,7 @@ app.get("/api/blogs/:blogId/similar", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch blog" });
   }
 });
+
 
 
 
