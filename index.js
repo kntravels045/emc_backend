@@ -5,8 +5,8 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
 const { PrismaClient } = require('@prisma/client')
-const app = express()
 const prisma = new PrismaClient()
+const app = express()
 const s3 = require('./s3Client')
 const config = require('./config');
 const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
@@ -14,7 +14,6 @@ const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const upload = require("./multer.js");
 dotenv.config();
 app.use(cors({
-    origin: "http://localhost:5173",   // your frontend URL
     credentials: true
   }));
 app.use(express.json())
@@ -33,10 +32,31 @@ const s3Client = new S3Client({
 
 //console.log(process.env.ACCESS_SECRET)
 
-app.get('/test',(req,res)=>{
-    console.log('Working Perfect')
-    res.send('Working Perfect...')
-})
+app.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`; // DB connection check
+
+    res.status(200).json({
+      status: "OK",
+      server: "Running",
+      database: "Connected",
+      timestamp: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      status: "ERROR",
+      server: "Running",
+      database: "Disconnected",
+      message: "Database connection failed",
+      error: error.message,
+      timestamp: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+    });
+  }
+});
+
+
+
 
 // ==========================
 // Middleware: Protect Routes
@@ -258,7 +278,7 @@ app.post('/logout', async (req, res) => {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // ✅ Create Video Category
-  app.post("/api/add/video-category", async (req, res) => {
+  app.post("/api/add/video-category",authenticateToken, async (req, res) => {
     try {
       const data = req.body;
   
@@ -284,59 +304,9 @@ app.post('/logout', async (req, res) => {
         .json({ message: "Internal Server Error", error: error.message });
     }
   });
-  
-// ✅ Create Short Category
-  app.post("/api/add/short-category", async (req, res) => {
-    try {
-      const data = req.body;
-  
-      if (!data.name || !data.userId) {
-        return res.status(400).json({ message: "Name and userId are required" });
-      }
-  
-      const createShortCategory = await prisma.shortCategory.create({
-        data: {
-          name: data.name,
-          userId: data.userId,
-        },
-      });
-  
-      return res.status(201).json({
-        data: createShortCategory,
-        message: "ShortCategory created successfully",
-      });
-    } catch (error) {
-      console.error("Error creating short category:", error);
-      return res
-        .status(500)
-        .json({ message: "Internal Server Error", error: error.message });
-    }
-  });
 
-  app.post("/api/add/shorts-video", async (req, res) => {
-    try {
-      const data = req.body;
   
-      const addShortsVideo = await prisma.short.create({
-        data: {
-          videoLink: data.videoLink,
-          shortCategoryId: data.shortCategoryId, // keep naming consistent
-        },
-      });
-  
-      return res.status(201).json({
-        message: "Shorts video added successfully",
-      });
-    } catch (error) {
-      console.error("Error adding shorts video:", error);
-      return res.status(500).json({
-        message: "Internal Server Error",
-        error: error.message,
-      });
-    }
-  });
-
-  app.post("/api/add/episode-video", async (req, res) => {
+  app.post("/api/add/episode-video",authenticateToken, async (req, res) => {
     try {
       const data = req.body;
       const addEpisode = await prisma.video.create({
@@ -410,7 +380,7 @@ app.post('/logout', async (req, res) => {
         error: error.message,
       });
     }
-  });
+  });//amose
   
   app.get("/api/episode", async (req, res) => {
     try {
@@ -475,11 +445,9 @@ app.post('/logout', async (req, res) => {
         error: error.message,
       });
     }
-  });
+  });//amose
 
-
-
-  app.put("/api/video/:videoId", async (req, res) => {
+app.put("/api/video/:videoId",authenticateToken, async (req, res) => {
     try {
       const { videoId } = req.params;
       const { title, description, hostName, episodeNumber, hostVideoLink,videoCategoryId} = req.body;
@@ -506,7 +474,7 @@ app.post('/logout', async (req, res) => {
     }
   });
 
-  app.delete("/api/video/:videoId", async (req, res) => {
+app.delete("/api/video/:videoId",authenticateToken, async (req, res) => {
     try {
       const { videoId } = req.params;
   
@@ -522,8 +490,60 @@ app.post('/logout', async (req, res) => {
       return res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
   });
+  
+// ✅ Create Short Category
+  app.post("/api/add/short-category",authenticateToken, async (req, res) => {
+    try {
+      const data = req.body;
+  
+      if (!data.name || !data.userId) {
+        return res.status(400).json({ message: "Name and userId are required" });
+      }
+  
+      const createShortCategory = await prisma.shortCategory.create({
+        data: {
+          name: data.name,
+          userId: data.userId,
+        },
+      });
+  
+      return res.status(201).json({
+        data: createShortCategory,
+        message: "ShortCategory created successfully",
+      });
+    } catch (error) {
+      console.error("Error creating short category:", error);
+      return res
+        .status(500)
+        .json({ message: "Internal Server Error", error: error.message });
+    }
+  });
 
-  app.put("/api/shorts/:shortId", async (req, res) => {
+  app.post("/api/add/shorts-video",authenticateToken, async (req, res) => {
+    try {
+      const data = req.body;
+  
+      const addShortsVideo = await prisma.short.create({
+        data: {
+          videoLink: data.videoLink,
+          shortCategoryId: data.shortCategoryId, // keep naming consistent
+        },
+      });
+  
+      return res.status(201).json({
+        message: "Shorts video added successfully",
+      });
+    } catch (error) {
+      console.error("Error adding shorts video:", error);
+      return res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  });
+
+
+  app.put("/api/shorts/:shortId",authenticateToken, async (req, res) => {
     try {
 
       const { shortId } = req.params;
@@ -547,7 +567,7 @@ app.post('/logout', async (req, res) => {
     }
   });
 
-  app.delete("/api/shorts/:shortId", async (req, res) => {
+  app.delete("/api/shorts/:shortId",authenticateToken, async (req, res) => {
     try {
       const { shortId } = req.params;
   
@@ -608,7 +628,7 @@ app.post('/logout', async (req, res) => {
         error: error.message,
       });
     }
-  });
+  });//amose
   
   
   app.get("/api/shorts", async (req, res) => {
@@ -674,12 +694,12 @@ app.post('/logout', async (req, res) => {
         error: error.message,
       });
     }
-  });
+  });//amose
   
 //////////////////////////////////////////////////
 // addingGuestRoute
 
-app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
+app.post("/api/add-guest",authenticateToken,upload.single("guestImage"),async (req, res) => {
     try {
       const {
         guestName,guestRole,aboutGuest,instagram,twitter,threads,headingOne,descriptionOne,headingTwo,descriptionTwo,
@@ -734,12 +754,7 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
     }
   });
 
-// app.get("/api/manage/guest", async (req,res)=>{
-//     const manageGuest = await prisma.guest.findMany()
-//     res.json({
-//         data:manageGuest
-//     })
-//   })
+
   
  app.get("/api/manage-guest", async (req, res) => {
     try {
@@ -760,7 +775,7 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
       console.error("Error fetching guests:", error);
       res.status(500).json({ error: "Failed to fetch guests" });
     }
-  });
+  });//amose
 
  app.get("/api/manage-guest/:guestId", async (req, res) => {
     try {
@@ -785,9 +800,9 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
         error: error.message,
       });
     }
-  });
+  });//amose
 
-  app.put("/api/manage-guest/:guestId",upload.single("guestImage"), async (req, res) => {
+  app.put("/api/manage-guest/:guestId",authenticateToken,upload.single("guestImage"), async (req, res) => {
     console.log("🟡 PUT /api/manage-guest/:guestId called");
   
     try {
@@ -889,7 +904,7 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
 
 
 
-  app.delete("/api/manage-guest/:guestId", async (req, res) => {
+  app.delete("/api/manage-guest/:guestId",authenticateToken, async (req, res) => {
 
   console.log("🟡 DELETE /api/manage-guest/:guestId called");
 
@@ -960,471 +975,7 @@ app.post("/api/add-guest",upload.single("guestImage"),async (req, res) => {
 
 
 
-
-
-
-// --------------------------------
-// CREATE NEW BLOG (with images)
-// --------------------------------
-// app.post("/api/add-blogs",upload.fields([{ name: "thumbnail", maxCount: 1 },
-//   { name: "images", maxCount: 20 }]),async (req, res) => {
-//     // console.log("🟦 STEP 0: API HIT - /api/add-blogs");
-
-//     try {
-//       // ------------------------------------------------
-//       // console.log("🟨 STEP 1: RAW req.body =", req.body);
-//       // console.log("🟨 STEP 1: RAW req.files =", req.files);
-
-//       // 1️⃣ Extract JSON
-//       // console.log("🟧 STEP 2: Parsing req.body.data...");
-//       const { title, userId, blocks } = JSON.parse(req.body.data);
-
-//       // console.log("🟩 STEP 2 RESULT:");
-//       // console.log("   ➤ Title:", title);
-//       // console.log("   ➤ User ID:", userId);
-//       // console.log("   ➤ Blocks:", blocks);
-
-//       // 2️⃣ Extract THUMBNAIL
-//       // console.log("🟦 STEP 3: Extracting Thumbnail...");
-//       const thumbnailUrl = req.files.thumbnail
-//         ? req.files.thumbnail[0].location
-//         : null;
-
-//       // console.log("🟩 STEP 3 RESULT: Thumbnail URL =", thumbnailUrl);
-
-//       // 3️⃣ Extract IMAGES for blocks
-//       // console.log("🟦 STEP 4: Extracting Block Images...");
-//       const imageUploads = req.files.images
-//         ? req.files.images.map((f) => f.location)
-//         : [];
-
-//       // console.log("🟩 STEP 4 RESULT: Block Image URLs =", imageUploads);
-
-//       // 4️⃣ Build final blocks
-//       // console.log("🟦 STEP 5: Building finalBlocks array...");
-//       let imageIndex = 0;
-
-//       const finalBlocks = blocks.map((block, index) => {
-//         console.log(`---- Processing Block ${index} ----`);
-//         console.log("Block Data:", block);
-
-//         if (block.type === "image") {
-//           const imageUrl = imageUploads[imageIndex] || null;
-//           console.log(`🟡 Assigning image URL: ${imageUrl}`);
-//           imageIndex++;
-
-//           return {
-//             type: "image",
-//             value: null,
-//             imageUrl,
-//             order: index
-//           };
-//         }
-
-//         // console.log(`🔵 Non-image block: assigning value = ${block.value}`);
-//         return {
-//           type: block.type,
-//           value: block.value || null,
-//           imageUrl: null,
-//           order: index
-//         };
-//       });
-
-//       // console.log("🟩 STEP 5 RESULT: finalBlocks =", finalBlocks);
-
-//       // // 5️⃣ Create Blog in Prisma
-//       // console.log("🟦 STEP 6: Saving into database using Prisma...");
-
-//       const blog = await prisma.blog.create({
-//         data: {
-//           title,
-//           thumbnail: thumbnailUrl,
-//           userId,
-//           blocks: {
-//             create: finalBlocks
-//           }
-//         },
-//         include: { blocks: true }
-//       });
-
-//       // console.log("🟩 STEP 6 RESULT: Blog Saved Successfully!");
-//       // console.log(blog);
-
-//       return res.status(201).json({
-//         success: true,
-//         message: "Blog created successfully",
-//         // blog
-//       });
-
-//     } catch (err) {
-//       console.error("❌ STEP ERROR:", err);
-//       res.status(500).json({ success: false, error: err.message });
-//     }
-//   }
-// );
-
-
-  
-  // --------------------------------
-  // GET ALL BLOGS
-  // --------------------------------
-//   app.get("/api/blogs", async (req, res) => {
-//     try {
-//       // Get from query → /api/blogs?page=1&limit=10
-//       let { page, limit } = req.query;
-  
-//       page = parseInt(page) 
-//       limit = parseInt(limit)
-  
-//       const skip = (page - 1) * limit;
-  
-//       const blogs = await prisma.blog.findMany({
-//         skip,
-//         take: limit,
-//         orderBy: { createdAt: "desc" },
-//       });
-  
-//       const totalBlogs = await prisma.blog.count();
-  
-//       res.json({
-//         totalBlogs,
-//         currentPage: page,
-//         totalPages: Math.ceil(totalBlogs / limit),
-//         blogs,
-//       });
-//     } catch (err) {
-//       console.error(err);
-//       res.status(500).json({ error: "Failed to fetch blogs" });
-//     }
-//   });
-  
-
-
-
-  
-
-//   app.get("/api/blogs/:blogId/similar", async (req, res) => {
-//     const { blogId } = req.params;
-  
-//     try {
-//       console.log("🔍 Fetching blog with ID:", blogId);
-  
-//       const blog = await prisma.blog.findUnique({
-//         where: { blogId },
-//         include: { 
-//           blocks: {
-//             orderBy: { order: 'asc' }
-//           }
-//         },
-//       });
-  
-//       if (!blog) {
-//         console.log("❌ Blog not found");
-//         return res.status(404).json({ error: "Blog not found" });
-//       }
-  
-//       console.log("✅ Blog found:", blog.title);
-  
-  
-//       // -------------------------------------------------------------
-//       //     FETCH RANDOM BLOGS (Shuffled) EXCLUDING CURRENT BLOG
-//       // -------------------------------------------------------------
-//       console.log("🔍 Fetching random related blogs...");
-  
-//       let allBlogs = await prisma.blog.findMany({
-//         where: {
-//           NOT: { blogId: blog.blogId }
-//         },
-//         select: {
-//           blogId: true,
-//           title: true,
-//           thumbnail: true,
-//           updatedAt:true,
-//           createdAt:true
-//         }
-//       });
-  
-//       // Shuffle array (Fisher-Yates shuffle)
-//       allBlogs = allBlogs.sort(() => Math.random() - 0.5);
-  
-//       // Take any 4 random blogs
-//       const randomBlogs = allBlogs.slice(0, 4);
-  
-//       console.log("📌 Random blogs count:", randomBlogs.length);
-  
-//       // -------------------------------------------------------------
-  
-//       res.json({
-//         blog,
-//         relatedBlogs: randomBlogs
-//       });
-  
-//     } catch (err) {
-//       console.error("GET Blog Error:", err);
-//       res.status(500).json({ error: "Failed to fetch blog" });
-//     }
-//   });
-  
-
-// app.get("/api/blogs/:blogId", async (req, res) => {
-//   const { blogId } = req.params;
-
-//   try {
-//     const blog = await prisma.blog.findUnique({
-//       where: { blogId },
-//       include: { 
-//         blocks: {
-//           orderBy: { order: 'asc' }
-//         }
-//       },
-//     });
-
-//     if (!blog) {
-//       return res.status(404).json({ error: "Blog not found" });
-//     }
-
-//     res.json(blog);
-//   } catch (err) {
-//     console.error("GET Blog Error:", err);
-//     res.status(500).json({ error: "Failed to fetch blog" });
-//   }
-// })
-
-// app.put(
-//   "/api/blogs/:blogId",
-//   upload.fields([
-//     { name: "images", maxCount: 50 },
-//     { name: "thumbnail", maxCount: 1 },
-//   ]),
-//   async (req, res) => {
-
-//     console.log("🟡 PUT /api/blogs/:blogId CALLED");
-
-//     const { blogId } = req.params;
-//     console.log("👉 blogId:", blogId);
-
-//     console.log("👉 Incoming body:", req.body);
-//     console.log("👉 Incoming files:", req.files);
-
-//     try {
-//       console.log("🔍 Checking existing blog…");
-
-//       const existingBlog = await prisma.blog.findUnique({
-//         where: { blogId },
-//         include: { blocks: true },
-//       });
-
-//       console.log("👉 Existing blog:", existingBlog);
-
-//       if (!existingBlog) {
-//         console.log("❌ Blog not found");
-//         return res.status(404).json({ message: "Blog not found" });
-//       }
-
-//       console.log("🟦 Updating TITLE…");
-//       let updatedThumbnail = existingBlog.thumbnail;
-
-//       // -------------------------------
-//       // THUMBNAIL UPDATE
-//       // -------------------------------
-//       if (req.files.thumbnail) {
-//         console.log("🟧 Thumbnail received: ", req.files.thumbnail[0]);
-
-//         updatedThumbnail = "/uploads/" + req.files.thumbnail[0].filename;
-
-//         console.log("🟩 New Thumbnail URL:", updatedThumbnail);
-//       } else {
-//         console.log("ℹ️ No new thumbnail uploaded");
-//       }
-
-//       // -------------------------------
-//       // IMAGES UPDATE FOR BLOCKS
-//       // -------------------------------
-//       let imageMap = {};
-
-//       if (req.files.images) {
-//         console.log("🟧 Images received for blocks:", req.files.images);
-
-//         req.files.images.forEach((file, index) => {
-//           console.log(`👉 Mapping image ${index}`);
-//           imageMap[index] = "/uploads/" + file.filename;
-
-//           console.log("👉 Stored:", imageMap[index]);
-//         });
-//       }
-
-//       // -------------------------------
-//       // PARSE BLOCKS JSON
-//       // -------------------------------
-//       console.log("📦 Parsing blocks JSON…");
-
-//       let blocksData = JSON.parse(req.body.blocks);
-//       console.log("👉 Parsed blocks:", blocksData);
-
-//       // -------------------------------
-//       // DELETE OLD BLOCKS
-//       // -------------------------------
-//       console.log("🗑 Deleting existing blocks…");
-
-//       await prisma.block.deleteMany({
-//         where: { blogId },
-//       });
-
-//       console.log("✔ Old blocks removed.");
-
-//       // -------------------------------
-//       // CREATE NEW BLOCKS
-//       // -------------------------------
-//       console.log("➕ Creating new blocks…");
-
-//       const newBlocks = await prisma.$transaction(
-//         blocksData.map((block, index) => {
-//           console.log(`👉 Creating Block ${index}:`, block);
-
-//           return prisma.block.create({
-//             data: {
-//               type: block.type,
-//               value: block.value || null,
-//               imageUrl: imageMap[index] || null,
-//               order: block.order,
-//               blogId,
-//             },
-//           });
-//         })
-//       );
-
-//       console.log("✔ Blocks created:", newBlocks);
-
-//       // -------------------------------
-//       // UPDATE BLOG
-//       // -------------------------------
-//       console.log("🟦 Updating blog…");
-
-//       const updatedBlog = await prisma.blog.update({
-//         where: { blogId },
-//         data: {
-//           title: req.body.title,
-//           thumbnail: updatedThumbnail,
-//         },
-//         include: { blocks: true },
-//       });
-
-//       console.log("✔ Blog updated:", updatedBlog);
-
-//       return res.json({
-//         message: "Blog updated successfully!",
-//         data: updatedBlog,
-//       });
-
-//     } catch (error) {
-//       console.log("❌ Error:", error);
-//       return res.status(500).json({ error: error.message });
-//     }
-//   }
-// );
-
-
-
-// app.delete("/api/blogs/:blogId", async (req, res) => {
-//   console.log("🟡 DELETE /api/blogs called");
-
-//   const { blogId } = req.params;
-
-//   try {
-//     console.log("👉 blogId:", blogId);
-
-//     // Fetch blog + blocks (thumbnail + block images)
-//     console.log("🔍 Fetching blog and blocks…");
-//     const blog = await prisma.blog.findUnique({
-//       where: { blogId },
-//       include: { blocks: true },
-//     });
-
-//     if (!blog) {
-//       console.log("❌ Blog not found");
-//       return res.status(404).json({ error: "Blog not found" });
-//     }
-
-//     console.log("✅ Blog found");
-
-//     // -------------------------------------
-//     // COLLECT IMAGES TO DELETE
-//     // -------------------------------------
-//     let toDelete = [];
-
-//     // 1. Thumbnail
-//     console.log("📌 Thumbnail:", blog.thumbnail);
-//     if (blog.thumbnail && blog.thumbnail !== "null") {
-//       toDelete.push(blog.thumbnail);
-//     }
-
-//     // 2. Block images (imageUrl)
-//     console.log("🧱 Blocks count:", blog.blocks.length);
-
-//     blog.blocks.forEach((block, index) => {
-//       console.log(`🔎 Block ${index + 1} imageUrl:`, block.imageUrl);
-
-//       if (block.imageUrl && block.imageUrl !== "null") {
-//         toDelete.push(block.imageUrl);
-//       }
-//     });
-
-//     console.log("🖼 Total Images to delete:", toDelete.length);
-//     console.log(toDelete);
-
-//     // -------------------------------------
-//     // DELETE IMAGES FROM S3
-//     // -------------------------------------
-//     for (const url of toDelete) {
-//       try {
-//         if (!url) continue;
-
-//         console.log("🧹 Preparing delete:", url);
-
-//         // Extract S3 key
-//         const keyFromUrl = decodeURIComponent(url.split("/").pop());
-
-//         const fileKey = keyFromUrl.startsWith("Dashboard/")
-//           ? keyFromUrl
-//           : `Dashboard/${keyFromUrl}`;
-
-//         console.log("🗑 S3 Delete key:", fileKey);
-
-//         await s3Client.send(
-//           new DeleteObjectCommand({
-//             Bucket: config.S3_BUCKET_NAME,
-//             Key: fileKey,
-//           })
-//         );
-
-//         console.log("✅ Deleted from S3:", fileKey);
-//       } catch (s3Err) {
-//         console.log("❌ S3 Delete failed:", s3Err);
-//       }
-//     }
-
-//     // -------------------------------------
-//     // DELETE FROM DATABASE
-//     // -------------------------------------
-//     console.log("🧹 Deleting blocks from DB…");
-//     await prisma.block.deleteMany({ where: { blogId } });
-//     console.log("✅ Blocks deleted");
-
-//     console.log("🧹 Deleting blog…");
-//     await prisma.blog.delete({ where: { blogId } });
-//     console.log("✅ Blog deleted from DB");
-
-//     res.json({ message: "Blog + images deleted successfully" });
-
-//   } catch (err) {
-//     console.error("❌ Error deleting blog:", err);
-//     res.status(500).json({ error: "Failed to delete blog" });
-//   }
-// });
-
-
-app.post(
-  "/api/add-blogs",
+app.post("/api/add-blogs",authenticateToken,
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "images", maxCount: 50 },
@@ -1503,10 +1054,10 @@ app.post(
       console.error(err);
       res.status(500).json({ error: "Failed to fetch blogs" });
     }
-  });
+  });//amose
 
   
-app.post("/api/blogs", async (req, res) => {
+app.post("/api/blogs",authenticateToken, async (req, res) => {
   try {
     const { page, limit } = req.body;
     const skip = (page - 1) * limit;
@@ -1538,7 +1089,7 @@ app.post("/api/blogs", async (req, res) => {
   }
 });
 
-app.get("/api/blogs/:blogId", async (req, res) => {
+app.get("/api/blogs/:blogId",authenticateToken, async (req, res) => {
   const { blogId } = req.params;
 
   try {
@@ -1603,17 +1154,15 @@ app.get("/api/blogs/:blogId/similar", async (req, res) => {
     console.error("GET Blog Error:", err);
     res.status(500).json({ error: "Failed to fetch blog" });
   }
-});
+});//amose
 
 
 
 
 
-// ==================================
-//          UPDATE BLOG (PUT)
-// ==================================
+
 app.put(
-  "/api/blogs/:blogId",
+  "/api/blogs/:blogId",authenticateToken,
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "images", maxCount: 50 },
@@ -1657,22 +1206,261 @@ app.put(
 );
 
 
-// ==================================
-//          DELETE BLOG
-// ==================================
-app.delete("/api/blogs/:blogId", async (req, res) => {
+
+// app.put(
+//   "/api/blogs/:blogId",
+//   upload.fields([
+//     { name: "thumbnail", maxCount: 1 },
+//     { name: "images", maxCount: 50 },
+//   ]),
+//   async (req, res) => {
+//     console.log("🟡 PUT update blog API called");
+
+//     try {
+//       const blogId = req.params.blogId;
+//       console.log("👉 blogId:", blogId);
+
+//       console.log("🔍 Fetching existing blog...");
+//       const oldBlog = await prisma.blog.findUnique({
+//         where: { blogId },
+//       });
+
+//       console.log("📄 Old blog data:", oldBlog);
+
+//       const { title, author, content } = req.body;
+//       const parsedContent = JSON.parse(content);
+
+//       let newThumbnail = undefined;
+
+//       // -------------------------------------------
+//       // DELETE OLD THUMBNAIL IF NEW ONE UPLOADED
+//       // -------------------------------------------
+//       if (req.files["thumbnail"]) {
+//         console.log("🖼 New thumbnail uploaded!");
+
+//         if (oldBlog.thumbnail) {
+//           console.log("🗑 Deleting OLD thumbnail:", oldBlog.thumbnail);
+
+//           const oldKey = decodeURIComponent(oldBlog.thumbnail.split("/").pop());
+//           const finalOldKey = oldKey.startsWith("Dashboard/")
+//             ? oldKey
+//             : `Dashboard/${oldKey}`;
+
+//           console.log("📌 OLD S3 Key:", finalOldKey);
+
+//           await s3.send(
+//             new DeleteObjectCommand({
+//               Bucket: process.env.S3_BUCKET_NAME,
+//               Key: finalOldKey,
+//             })
+//           );
+
+//           console.log("✔ Old thumbnail deleted");
+//         }
+
+//         newThumbnail = req.files["thumbnail"][0].location;
+//         console.log("👉 New thumbnail:", newThumbnail);
+//       }
+
+//       // ---------------------------------------------------------
+//       // DELETE OLD BLOCK IMAGE IF NEW ONE UPLOADED FOR THAT BLOCK
+//       // ---------------------------------------------------------
+//       if (req.files["images"]) {
+//         console.log("🖼 Checking block images...");
+//         console.log("📸 New block images found:", req.files["images"].length);
+
+//         req.files["images"].forEach((img, index) => {
+//           console.log("🔄 Processing new image index:", index);
+
+//           // find block to replace
+//           const block = parsedContent.find(
+//             (b) => b.type === "image" && b.value == index
+//           );
+
+//           if (block) {
+//             // find old image URL in oldBlog.content
+//             const oldBlock = oldBlog.content.find(
+//               (b) => b.type === "image" && b.value == block.value
+//             );
+
+//             if (oldBlock) {
+//               console.log("🗑 Deleting OLD block image:", oldBlock.value);
+
+//               const oldImgKey = decodeURIComponent(oldBlock.value.split("/").pop());
+//               const finalOldImgKey = oldImgKey.startsWith("Dashboard/")
+//                 ? oldImgKey
+//                 : `Dashboard/${oldImgKey}`;
+
+//               console.log("📌 OLD block S3 Key:", finalOldImgKey);
+
+//               s3.send(
+//                 new DeleteObjectCommand({
+//                   Bucket: process.env.S3_BUCKET_NAME,
+//                   Key: finalOldImgKey,
+//                 })
+//               );
+//             }
+
+//             // update with new image URL
+//             block.value = img.location;
+//             console.log("✔ Updated block with new image:", block.value);
+//           }
+//         });
+//       }
+
+//       // -----------------------------------------------------
+//       // UPDATE BLOG IN DATABASE
+//       // -----------------------------------------------------
+//       console.log("📝 Updating blog in database...");
+
+//       const updated = await prisma.blog.update({
+//         where: { blogId },
+//         data: {
+//           title,
+//           author,
+//           ...(newThumbnail && { thumbnail: newThumbnail }),
+//           content: parsedContent,
+//         },
+//       });
+
+//       console.log("✅ Blog updated successfully!");
+//       res.json(updated);
+
+//     } catch (err) {
+//       console.log("❌ PUT ERROR:", err);
+//       res.status(500).json({ error: "Failed to update blog" });
+//     }
+//   }
+// );
+
+
+
+app.delete("/api/blogs/:blogId",authenticateToken, async (req, res) => {
+  console.log("🟡 DELETE /api/blogs/:blogId API Called");
+
   try {
-    await prisma.blog.delete({
-      where: { blogId: req.params.blogId },
+    console.log("📥 Extracting blogId from params...");
+    const { blogId } = req.params;
+    console.log("👉 blogId:", blogId);
+
+    console.log("🔍 Fetching blog from database...");
+    const blog = await prisma.blog.findUnique({
+      where: { blogId },
     });
 
-    res.json({ message: "Blog deleted successfully" });
+    console.log("📄 Blog fetched:", blog);
+
+    if (!blog) {
+      console.log("❌ Blog NOT found!");
+      return res.status(404).json({ error: "Blog not found" });
+    }
+
+    console.log("🧾 Initializing filesToDelete array...");
+    let filesToDelete = [];
+
+    // ------------------------------------
+    // THUMBNAIL
+    // ------------------------------------
+    console.log("🖼 Checking thumbnail...");
+    if (blog.thumbnail) {
+      console.log("📸 Thumbnail found:", blog.thumbnail);
+      filesToDelete.push(blog.thumbnail);
+    } else {
+      console.log("⚠️ Thumbnail NOT found");
+    }
+
+    // ------------------------------------
+    // RECURSIVELY SCAN CONTENT JSON FOR IMAGES
+    // ------------------------------------
+    console.log("🔎 Starting recursive scan of content JSON...");
+
+    const extractImageUrls = (obj) => {
+      console.log("🔍 Scanning object:", obj);
+
+      if (!obj) {
+        console.log("⚠️ Null object encountered, skipping...");
+        return;
+      }
+
+      if (typeof obj === "string") {
+        console.log("📌 Found string:", obj);
+        if (obj.includes("s3") || obj.includes("amazonaws.com")) {
+          console.log("🖼 IMAGE URL FOUND:", obj);
+          filesToDelete.push(obj);
+        }
+      }
+
+      if (Array.isArray(obj)) {
+        console.log("📚 It's an array, looping through items...");
+        obj.forEach((item) => extractImageUrls(item));
+      }
+
+      if (typeof obj === "object") {
+        console.log("🧩 It's an object, scanning values...");
+        Object.values(obj).forEach((value) => extractImageUrls(value));
+      }
+    };
+
+    console.log("🚀 Begin JSON scan...");
+    extractImageUrls(blog.content);
+    console.log("🎉 Finished scanning JSON!");
+
+    console.log("📝 All identified URLs:", filesToDelete);
+
+    // ------------------------------------
+    // DELETE FILES FROM AWS S3
+    // ------------------------------------
+    console.log("🗑 Preparing to delete files from S3...");
+
+    for (const photoUrl of filesToDelete) {
+      console.log("🖼 Processing photoUrl:", photoUrl);
+
+      try {
+        console.log("🔠 Extracting S3 key from URL...");
+        const decodedKey = decodeURIComponent(photoUrl.split("/").pop());
+
+        console.log("👉 Extracted filename:", decodedKey);
+
+        const fileKey = decodedKey.startsWith("Dashboard/")
+          ? decodedKey
+          : `Dashboard/${decodedKey}`;
+
+        console.log("📌 Final S3 delete key:", fileKey);
+
+        const deleteParams = {
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: fileKey,
+        };
+
+        console.log("📦 Delete Params:", deleteParams);
+
+        const deleteCommand = new DeleteObjectCommand(deleteParams);
+
+        console.log("🛰 Sending delete request to S3...");
+        await s3.send(deleteCommand);
+
+        console.log("✅ Successfully deleted from S3:", fileKey);
+      } catch (err) {
+        console.log("❌ Error deleting this file:", photoUrl, err);
+      }
+    }
+
+    // ------------------------------------
+    // DELETE BLOG FROM DATABASE
+    // ------------------------------------
+    console.log("🗑 Deleting blog from database...");
+    await prisma.blog.delete({
+      where: { blogId },
+    });
+
+    console.log("✅ Blog deleted from DB");
+
+    res.json({ message: "Blog and all images deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: "Error deleting blog" });
+    console.log("❌ SERVER ERROR:", err);
+    res.status(500).json({ error: "Failed to delete blog" });
   }
 });
-
-
 
 
 
