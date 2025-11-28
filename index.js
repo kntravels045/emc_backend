@@ -14,8 +14,9 @@ const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const upload = require("./multer.js");
 dotenv.config();
 app.use(cors({
-    credentials: true
-  }));
+  origin: 'https://emc-backend.onrender.com',  // frontend origin
+  credentials: true,
+}))
 app.use(express.json())
 app.use(cookieParser())
 
