@@ -231,30 +231,48 @@ app.post("/register", async (req, res) => {
 // Logout Route
 // ==========================
 app.post('/logout', async (req, res) => {
-    try {
-      const { refreshToken } = req.cookies;
-      if (!refreshToken) return res.sendStatus(204);
-  
-      const decoded = jwt.verify(refreshToken, process.env.ACCESS_SECRET);
-  
-      // Clear refresh token in DB
-      await prisma.user.update({
-        where: { userId: decoded.userId },
-        data: { refreshToken: null },
-      });
-  
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-      });
-  
-      res.json({ message: 'Logged out successfully' });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Server error' });
+  console.log("🔵 Logout API Hit");
+
+  try {
+    console.log("📌 Cookies received:", req.cookies);
+
+    const { refreshToken } = req.cookies;
+    console.log("🔑 Extracted refreshToken:", refreshToken);
+
+    if (!refreshToken) {
+      console.log("⚠️ No refresh token found → Already logged out");
+      return res.sendStatus(204);
     }
-  });
+
+    console.log("🟡 Verifying refresh token...");
+    const decoded = jwt.verify(refreshToken, process.env.ACCESS_SECRET);
+
+    console.log("✅ Token decoded successfully:", decoded);
+
+    console.log(`🧹 Clearing refreshToken for userId: ${decoded.userId} in DB...`);
+    await prisma.user.update({
+      where: { userId: decoded.userId },
+      data: { refreshToken: null },
+    });
+    console.log("✔️ Refresh token cleared in DB.");
+
+    console.log("🧽 Clearing refreshToken cookie from browser...");
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+    console.log("✔️ Cookie cleared from browser.");
+
+    console.log("🟢 Logout successful → Sending response");
+    res.json({ message: "Logged out successfully" });
+
+  } catch (err) {
+    console.error("❌ Logout error:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
   
   // ==========================
   // Protected Route Example
