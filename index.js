@@ -139,6 +139,8 @@ app.post("/register", async (req, res) => {
       const refreshExpiry = remember ? "30d" : "60s";
       // const accessExpiry = remember ? "7d" : "30m";
       // const refreshExpiry = remember ? "30d" : "1d";
+      // const accessExpiry = remember ? "7d" : "30m";
+      // const refreshExpiry = remember ? "30d" : "1d";
   
       console.log("Remember Me:", remember);
       console.log("Access Expiry:", accessExpiry);
