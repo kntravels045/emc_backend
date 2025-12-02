@@ -135,8 +135,8 @@ app.post("/register", async (req, res) => {
       // 🔥 “Remember Me” Logic
       const remember = data.rememberMe === true;
   
-      const accessExpiry = remember ? "7d" : "30s";
-      const refreshExpiry = remember ? "30d" : "60s";
+      const accessExpiry = remember ? "7d" : "7d";
+      const refreshExpiry = remember ? "30d" : "30d";
       // const accessExpiry = remember ? "7d" : "30m";
       // const refreshExpiry = remember ? "30d" : "1d";
       // const accessExpiry = remember ? "7d" : "30m";
@@ -173,7 +173,7 @@ app.post("/register", async (req, res) => {
         maxAge: remember
           ? 30 * 24 * 60 * 60 * 1000 // 30 days
           //: 24 * 60 * 60 * 1000,     // 1 day
-          : 30 * 1000,
+          :30 * 24 * 60 * 60 * 1000,
       });
   
       // Response
