@@ -115,7 +115,7 @@ const getAllVideo = async (req, res) => {
 
 const getVideoByPagination = async (req, res) => {
     try {
-      const { categoryId, page = 1, limit = 4 } = req.query;
+      const { categoryId, page = 1, limit = 1 } = req.query;
   
       const pageNumber = parseInt(page);
       const limitNumber = parseInt(limit);

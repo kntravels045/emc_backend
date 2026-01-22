@@ -785,7 +785,7 @@ app.post("/api/add-guest",authenticateToken,upload.single("guestImage"),async (r
 
 
   
- app.get("/api/manage-guest", async (req, res) => {
+app.get("/api/manage-guest", async (req, res) => {
     try {
       const manageGuest = await prisma.guest.findMany({
         select: {
@@ -806,7 +806,7 @@ app.post("/api/add-guest",authenticateToken,upload.single("guestImage"),async (r
     }
   });//amose
 
- app.get("/api/manage-guest/:guestId", async (req, res) => {
+app.get("/api/manage-guest/:guestId", async (req, res) => {
     try {
       const { guestId } = req.params;
   
@@ -1488,6 +1488,110 @@ app.delete("/api/blogs/:blogId",authenticateToken, async (req, res) => {
   } catch (err) {
     console.log("❌ SERVER ERROR:", err);
     res.status(500).json({ error: "Failed to delete blog" });
+  }
+});
+
+
+
+
+//newly added apis in jan-22
+
+
+//THIS IS FOR VIDEO Category
+app.put("/api/video-category/:videoCategoryId", async (req, res) => {
+  try {
+    const { videoCategoryId } = req.params;
+    const { name } = req.body;
+
+    const updatedCategory = await prisma.videoCategory.update({
+      where: { videoCategoryId },
+      data: { name },
+    });
+    console.log(updatedCategory)
+    res.json({
+      message: "VideoCategory updated successfully",
+      data: updatedCategory,
+      
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+});
+
+
+app.delete("/api/video-category/:videoCategoryId", async (req, res) => {
+  try {
+    const { videoCategoryId } = req.params;
+
+    await prisma.videoCategory.delete({
+      where: { videoCategoryId },
+    });
+
+    res.json({
+      message: "VideoCategory deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+});
+
+
+//THIS IS FOR SHORTS Category
+
+
+app.put("/api/short-category/:shortCategoryId", async (req, res) => {
+  try {
+    const { shortCategoryId } = req.params;
+    const { name } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        message: "Name is required",
+      });
+    }
+
+    const updatedCategory = await prisma.shortCategory.update({
+      where: { shortCategoryId },
+      data: { name },
+    });
+
+    res.status(200).json({
+      message: "Short category updated successfully",
+      data: updatedCategory,
+    });
+  } catch (error) {
+    console.error("Error updating short category:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+});
+
+
+app.delete("/api/short-category/:shortCategoryId", async (req, res) => {
+  try {
+    const { shortCategoryId } = req.params;
+
+    await prisma.shortCategory.delete({
+      where: { shortCategoryId },
+    });
+
+    res.status(200).json({
+      message: "Short deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting short:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 });
 
