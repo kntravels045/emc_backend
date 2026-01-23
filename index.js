@@ -1235,112 +1235,77 @@ app.get("/api/blogs/:blogId/similar", async (req, res) => {
 
 
 app.put(
-  "/api/blogs/:blogId",authenticateToken,
+  "/api/blogs/:blogId",
+  authenticateToken,
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "images", maxCount: 50 },
   ]),
   async (req, res) => {
-    console.log("🟡 PUT update blog API called");
-
     try {
-      const blogId = req.params.blogId;
-      console.log("👉 blogId:", blogId);
-
-      console.log("🔍 Fetching existing blog...");
-      const oldBlog = await prisma.blog.findUnique({
-        where: { blogId },
-      });
-
-      console.log("📄 Old blog data:", oldBlog);
-
+      const { blogId } = req.params;
       const { title, author, content } = req.body;
       const parsedContent = JSON.parse(content);
 
-      let newThumbnail = undefined;
+      // 1️⃣ Fetch existing blog
+      const oldBlog = await prisma.blog.findUnique({
+        where: { blogId },
+      });
+      if (!oldBlog) {
+        return res.status(404).json({ message: "Blog not found" });
+      }
 
-      // -------------------------------------------
-      // DELETE OLD THUMBNAIL IF NEW ONE UPLOADED
-      // -------------------------------------------
-      if (req.files["thumbnail"]) {
-        console.log("🖼 New thumbnail uploaded!");
+      let newThumbnail;
 
+      // 2️⃣ Handle thumbnail replacement
+      if (req.files?.thumbnail) {
         if (oldBlog.thumbnail) {
-          console.log("🗑 Deleting OLD thumbnail:", oldBlog.thumbnail);
-
-          const oldKey = decodeURIComponent(oldBlog.thumbnail.split("/").pop());
-          const finalOldKey = oldKey.startsWith("Dashboard/")
-            ? oldKey
-            : `Dashboard/${oldKey}`;
-
-          console.log("📌 OLD S3 Key:", finalOldKey);
-
+          const oldKey = decodeURIComponent(
+            oldBlog.thumbnail.split("/").pop()
+          );
           await s3.send(
             new DeleteObjectCommand({
               Bucket: process.env.S3_BUCKET_NAME,
-              Key: finalOldKey,
+              Key: `Dashboard/${oldKey}`,
             })
           );
-
-          console.log("✔ Old thumbnail deleted");
         }
-
-        newThumbnail = req.files["thumbnail"][0].location;
-        console.log("👉 New thumbnail:", newThumbnail);
+        newThumbnail = req.files.thumbnail[0].location;
       }
 
-      // ---------------------------------------------------------
-      // DELETE OLD BLOCK IMAGE IF NEW ONE UPLOADED FOR THAT BLOCK
-      // ---------------------------------------------------------
-      if (req.files["images"]) {
-        console.log("🖼 Checking block images...");
-        console.log("📸 New block images found:", req.files["images"].length);
-
-        req.files["images"].forEach((img, index) => {
-          console.log("🔄 Processing new image index:", index);
-
-          // find block to replace
-          const block = parsedContent.find(
-            (b) => b.type === "image" && b.value == index
+      // 3️⃣ Handle content images replacement
+      if (req.files?.images) {
+        req.files.images.forEach((img, uploadIndex) => {
+          // Find the block with matching upload index placeholder
+          const blockIndex = parsedContent.findIndex(
+            b => b.type === "image" && b.value === uploadIndex
           );
+          
+          if (blockIndex === -1) return;
 
-          if (block) {
-            // find old image URL in oldBlog.content
-            const oldBlock = oldBlog.content.find(
-              (b) => b.type === "image" && b.value == block.value
+          const block = parsedContent[blockIndex];
+          
+          // Delete old image from S3 if it exists
+          const oldBlock = oldBlog.content?.[blockIndex];
+          if (oldBlock?.value && typeof oldBlock.value === 'string' && oldBlock.value.includes('amazonaws')) {
+            const oldImgKey = decodeURIComponent(
+              oldBlock.value.split("/").pop()
             );
-
-            if (oldBlock) {
-              console.log("🗑 Deleting OLD block image:", oldBlock.value);
-
-              const oldImgKey = decodeURIComponent(oldBlock.value.split("/").pop());
-              const finalOldImgKey = oldImgKey.startsWith("Dashboard/")
-                ? oldImgKey
-                : `Dashboard/${oldImgKey}`;
-
-              console.log("📌 OLD block S3 Key:", finalOldImgKey);
-
-              s3.send(
-                new DeleteObjectCommand({
-                  Bucket: process.env.S3_BUCKET_NAME,
-                  Key: finalOldImgKey,
-                })
-              );
-            }
-
-            // update with new image URL
-            block.value = img.location;
-            console.log("✔ Updated block with new image:", block.value);
+            s3.send(
+              new DeleteObjectCommand({
+                Bucket: process.env.S3_BUCKET_NAME,
+                Key: `Dashboard/${oldImgKey}`,
+              })
+            ).catch(err => console.error('Error deleting old image:', err));
           }
+
+          // Replace with new image URL
+          block.value = img.location;
         });
       }
 
-      // -----------------------------------------------------
-      // UPDATE BLOG IN DATABASE
-      // -----------------------------------------------------
-      console.log("📝 Updating blog in database...");
-
-      const updated = await prisma.blog.update({
+      // 4️⃣ Update blog
+      const updatedBlog = await prisma.blog.update({
         where: { blogId },
         data: {
           title,
@@ -1350,12 +1315,10 @@ app.put(
         },
       });
 
-      console.log("✅ Blog updated successfully!");
-      res.json(updated);
-
-    } catch (err) {
-      console.log("❌ PUT ERROR:", err);
-      res.status(500).json({ error: "Failed to update blog" });
+      res.json(updatedBlog);
+    } catch (error) {
+      console.error("PUT BLOG ERROR:", error);
+      res.status(500).json({ message: "Failed to update blog", error: error.message });
     }
   }
 );
