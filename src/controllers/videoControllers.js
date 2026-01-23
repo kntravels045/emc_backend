@@ -9,6 +9,8 @@ const s3Client = new S3Client({
     }
   })
 
+
+
 const addCategory =  async (req, res) => {
     try {
       const data = req.body;
@@ -36,6 +38,51 @@ const addCategory =  async (req, res) => {
         .json({ message: "Internal Server Error", error: error.message });
     }
   }
+
+  const updateVideoCategory =  async (req, res) => {
+    try {
+      const { videoCategoryId } = req.params;
+      const { name } = req.body;
+  
+      const updatedCategory = await prisma.videoCategory.update({
+        where: { videoCategoryId },
+        data: { name },
+      });
+      console.log(updatedCategory)
+      res.json({
+        message: "VideoCategory updated successfully",
+        data: updatedCategory,
+        
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  };
+  
+  
+  const deleteVideoCategory = async (req, res) => {
+    try {
+      const { videoCategoryId } = req.params;
+      
+  
+      await prisma.videoCategory.delete({
+        where: { videoCategoryId },
+      });
+  
+      res.json({
+        message: "VideoCategory deleted successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Internal Server Error",
+        error: error.message,
+      });
+    }
+  };
+  
 
 const addVideo =  async (req, res) => {
     try {
@@ -224,6 +271,8 @@ const deleteVideo = async (req, res) => {
 
 module.exports={
     addCategory,
+    updateVideoCategory,
+    deleteVideoCategory,
     addVideo,
     getAllVideo,
     getVideoByPagination,

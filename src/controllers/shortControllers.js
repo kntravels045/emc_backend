@@ -29,6 +29,57 @@ const addShortCategory = async (req, res) => {
     }
   }
 
+  
+const updatedShortCategory =  async (req, res) => {
+  try {
+    const { shortCategoryId } = req.params;
+    const { name } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        message: "Name is required",
+      });
+    }
+
+    const updatedCategory = await prisma.shortCategory.update({
+      where: { shortCategoryId },
+      data: { name },
+    });
+
+    res.status(200).json({
+      message: "Short category updated successfully",
+      data: updatedCategory,
+    });
+  } catch (error) {
+    console.error("Error updating short category:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+
+const deleteShortCategory = async (req, res) => {
+  try {
+    const { shortCategoryId } = req.params;
+
+    await prisma.shortCategory.delete({
+      where: { shortCategoryId },
+    });
+
+    res.status(200).json({
+      message: "Short deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting short:", error);
+    res.status(500).json({
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+}
+
 const addShorts= async (req, res) => {
     try {
       const data = req.body;
@@ -206,6 +257,8 @@ const getShortsByPagination =  async (req, res) => {
 
   module.exports = {
     addShortCategory,
+    updatedShortCategory,
+    deleteShortCategory,
     addShorts,
     editShorts,
     deleteShorts,

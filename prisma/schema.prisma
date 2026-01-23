@@ -53,7 +53,7 @@ model Video {
   episodeNumber  String?
   hostVideoLink  String
   videoCategoryId     String
-  videoCategory      VideoCategory @relation(fields: [videoCategoryId], references: [videoCategoryId], onDelete: Cascade)
+  videoCategory      VideoCategory @relation(fields: [videoCategoryId], references: [videoCategoryId] )
   createdAt      DateTime   @default(now())
 }
 

@@ -1190,9 +1190,7 @@ app.get("/api/blogs/:blogId/similar", async (req, res) => {
 
 
 
-app.put(
-  "/api/blogs/:blogId",authenticateToken,
-  upload.fields([
+app.put("/api/blogs/:blogId",authenticateToken,upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "images", maxCount: 50 },
   ]),
@@ -1525,6 +1523,7 @@ app.put("/api/video-category/:videoCategoryId", async (req, res) => {
 app.delete("/api/video-category/:videoCategoryId", async (req, res) => {
   try {
     const { videoCategoryId } = req.params;
+    
 
     await prisma.videoCategory.delete({
       where: { videoCategoryId },
@@ -1534,6 +1533,12 @@ app.delete("/api/video-category/:videoCategoryId", async (req, res) => {
       message: "VideoCategory deleted successfully",
     });
   } catch (error) {
+    if (error.code === "P2003") {
+      return res.status(409).json({
+        message: "Category has videos and cannot be deleted",
+      });
+    }
+
     res.status(500).json({
       message: "Internal Server Error",
       error: error.message,
@@ -1588,6 +1593,11 @@ app.delete("/api/short-category/:shortCategoryId", async (req, res) => {
     });
   } catch (error) {
     console.error("Error deleting short:", error);
+    if (error.code === "P2003") {
+      return res.status(409).json({
+        message: "Category has shorts and cannot be deleted",
+      });
+    }
     res.status(500).json({
       message: "Internal Server Error",
       error: error.message,
