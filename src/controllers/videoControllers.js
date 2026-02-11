@@ -79,7 +79,7 @@ const addCategory =  async (req, res) => {
 
       if (error.code === "P2003") {
         return res.status(409).json({
-          message: "Category has Shorts and cannot be deleted",
+          message: "Category has Videos and cannot be deleted",
         });
       }
       res.status(500).json({
