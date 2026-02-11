@@ -76,6 +76,12 @@ const addCategory =  async (req, res) => {
         message: "VideoCategory deleted successfully",
       });
     } catch (error) {
+
+      if (error.code === "P2003") {
+        return res.status(409).json({
+          message: "Category has Shorts and cannot be deleted",
+        });
+      }
       res.status(500).json({
         message: "Internal Server Error",
         error: error.message,
