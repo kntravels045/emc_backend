@@ -11,6 +11,8 @@ const app = express();
 const cookieParser = require('cookie-parser')
 dotenv.config();
 
+
+
 app.use(
   cors({
     origin: [
@@ -29,6 +31,8 @@ app.use("/",videoRoutes)
 app.use("/",guestRoutes)
 app.use("/",blogsRoutes)
 app.use("/",contactForm)
+
+
 
 const PORT = 8000;
 app.listen(PORT, () => {

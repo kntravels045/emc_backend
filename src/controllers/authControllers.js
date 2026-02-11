@@ -2,9 +2,7 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const prisma = require("../utils/prisma")
 const config = require("../../config")
-require("dotenv").config();
-const isProd = process.env.NODE_ENV === "production";
-
+const isProd =  config.NODE_ENV === "production";
 
 const register =  async (req, res) => {
     const data = req.body;
@@ -99,6 +97,7 @@ const register =  async (req, res) => {
       res.status(500).json({ error: "Server error" });
     }
 }
+
 
 const refresh = async (req, res) => {
     try {
