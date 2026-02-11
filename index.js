@@ -23,12 +23,12 @@ app.use(
 app.use(express.json())
 app.use(cookieParser())
 
-app.use("/api",authRoutes)
-app.use("/api",shortRoutes)
-app.use("/api",videoRoutes)
-app.use("/api",guestRoutes)
-app.use("/api",blogsRoutes)
-app.use("/api",contactForm)
+app.use("/",authRoutes)
+app.use("/",shortRoutes)
+app.use("/",videoRoutes)
+app.use("/",guestRoutes)
+app.use("/",blogsRoutes)
+app.use("/",contactForm)
 
 const PORT = 8000;
 app.listen(PORT, () => {
