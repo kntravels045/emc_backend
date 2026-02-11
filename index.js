@@ -12,6 +12,29 @@ const cookieParser = require('cookie-parser')
 dotenv.config();
 
 
+// app.get('/health', async (req, res) => {
+//   try {
+//     await prisma.$queryRaw`SELECT 1`; // DB connection check
+
+//     res.status(200).json({
+//       status: "OK",
+//       server: "Running",
+//       database: "Connected",
+//       timestamp: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({
+//       status: "ERROR",
+//       server: "Running",
+//       database: "Disconnected",
+//       message: "Database connection failed",
+//       error: error.message,
+//       timestamp: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+//     });
+//   }
+// });
+
 
 app.use(
   cors({
@@ -25,13 +48,13 @@ app.use(
 app.use(express.json())
 app.use(cookieParser())
 
+
 app.use("/",authRoutes)
 app.use("/",shortRoutes)
 app.use("/",videoRoutes)
 app.use("/",guestRoutes)
 app.use("/",blogsRoutes)
 app.use("/",contactForm)
-
 
 
 const PORT = 8000;
