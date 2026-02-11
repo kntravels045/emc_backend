@@ -2,8 +2,7 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const prisma = require("../utils/prisma")
 const config = require("../../config")
-
-
+const isProd = process.env.NODE_ENV === "production";
 
 
 const register =  async (req, res) => {
@@ -79,8 +78,8 @@ const register =  async (req, res) => {
       // Send refresh token in cookie
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: true,
-        sameSite: "lax",
+        secure: isProd,                 // false in dev, true in prod
+        sameSite: isProd ? "none" : "lax",
         maxAge: remember
           ? 30 * 24 * 60 * 60 * 1000 // 30 days
           : 24 * 60 * 60 * 1000,     // 1 day
@@ -151,12 +150,7 @@ const logout = async (req, res) => {
         data: { refreshToken: null },
       });
   
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-      });
-  
+      res.clearCookie("refreshToken"); 
       res.json({ message: 'Logged out successfully' });
     } catch (err) {
       console.error(err);
