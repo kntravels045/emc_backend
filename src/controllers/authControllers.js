@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const prisma = require("../utils/prisma")
+const config = require("../../config")
 
 
 
@@ -52,20 +53,20 @@ const register =  async (req, res) => {
       const accessExpiry = remember ? "7d" : "30m";
       const refreshExpiry = remember ? "30d" : "1d";
   
-      console.log("Remember Me:", remember);
-      console.log("Access Expiry:", accessExpiry);
-      console.log("Refresh Expiry:", refreshExpiry);
+      // console.log("Remember Me:", remember);
+      // console.log("Access Expiry:", accessExpiry);
+      // console.log("Refresh Expiry:", refreshExpiry);
   
       // Generate tokens
       const accessToken = jwt.sign(
         { userId: user.userId },
-        process.env.ACCESS_SECRET,
+        config.ACCESS_SECRET,
         { expiresIn: accessExpiry }
       );
   
       const refreshToken = jwt.sign(
         { userId: user.userId },
-        process.env.ACCESS_SECRET,
+        config.ACCESS_SECRET,
         { expiresIn: refreshExpiry }
       );
   
@@ -107,7 +108,7 @@ const refresh = async (req, res) => {
       }
   
       // ✅ Verify refresh token using correct secret
-      const decoded = jwt.verify(refreshToken, process.env.ACCESS_SECRET);
+      const decoded = jwt.verify(refreshToken, config.ACCESS_SECRET);
       console.log("Decoded token:", decoded);
   
       // ✅ Find user using correct field (id)
@@ -126,7 +127,7 @@ const refresh = async (req, res) => {
       // ✅ Create new access token
       const newAccessToken = jwt.sign(
         { id: user.id },
-        process.env.ACCESS_SECRET,
+        config.ACCESS_SECRET,
         { expiresIn: "30s" }
       );
   
@@ -142,7 +143,7 @@ const logout = async (req, res) => {
       const { refreshToken } = req.cookies;
       if (!refreshToken) return res.sendStatus(204);
   
-      const decoded = jwt.verify(refreshToken, process.env.ACCESS_SECRET);
+      const decoded = jwt.verify(refreshToken, config.ACCESS_SECRET);
   
       // Clear refresh token in DB
       await prisma.user.update({

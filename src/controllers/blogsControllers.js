@@ -1,7 +1,7 @@
 const prisma = require("../utils/prisma")
 const config = require('../../config');
 const { S3Client, DeleteObjectCommand } = require("@aws-sdk/client-s3");
-const s3 = require('./s3Client')
+const s3 = require('../../s3Client')
 const s3Client = new S3Client({
     region: config.AWS_REGION,
     credentials: {
@@ -276,7 +276,7 @@ const deleteBlogsById = async (req, res) => {
           console.log("📌 Final S3 delete key:", fileKey);
   
           const deleteParams = {
-            Bucket: process.env.S3_BUCKET_NAME,
+            Bucket:config.env.S3_BUCKET_NAME,
             Key: fileKey,
           };
   
@@ -310,12 +310,93 @@ const deleteBlogsById = async (req, res) => {
     }
   }
 
-
+  const updateBlogs =  async (req, res) => {
+      try {
+        const { blogId } = req.params;
+        const { title, author, content } = req.body;
+        const parsedContent = JSON.parse(content);
+  
+        // 1️⃣ Fetch existing blog
+        const oldBlog = await prisma.blog.findUnique({
+          where: { blogId },
+        });
+        if (!oldBlog) {
+          return res.status(404).json({ message: "Blog not found" });
+        }
+  
+        let newThumbnail;
+  
+        // 2️⃣ Handle thumbnail replacement
+        if (req.files?.thumbnail) {
+          if (oldBlog.thumbnail) {
+            const oldKey = decodeURIComponent(
+              oldBlog.thumbnail.split("/").pop()
+            );
+            await s3.send(
+              new DeleteObjectCommand({
+                Bucket: config.S3_BUCKET_NAME,
+                Key: `Dashboard/${oldKey}`,
+              })
+            );
+          }
+          newThumbnail = req.files.thumbnail[0].location;
+        }
+  
+        // 3️⃣ Handle content images replacement
+        if (req.files?.images) {
+          req.files.images.forEach((img, uploadIndex) => {
+            // Find the block with matching upload index placeholder
+            const blockIndex = parsedContent.findIndex(
+              b => b.type === "image" && b.value === uploadIndex
+            );
+            
+            if (blockIndex === -1) return;
+  
+            const block = parsedContent[blockIndex];
+            
+            // Delete old image from S3 if it exists
+            const oldBlock = oldBlog.content?.[blockIndex];
+            if (oldBlock?.value && typeof oldBlock.value === 'string' && oldBlock.value.includes('amazonaws')) {
+              const oldImgKey = decodeURIComponent(
+                oldBlock.value.split("/").pop()
+              );
+              s3.send(
+                new DeleteObjectCommand({
+                  Bucket: config.S3_BUCKET_NAME,
+                  Key: `Dashboard/${oldImgKey}`,
+                })
+              ).catch(err => console.error('Error deleting old image:', err));
+            }
+  
+            // Replace with new image URL
+            block.value = img.location;
+          });
+        }
+  
+        // 4️⃣ Update blog
+        const updatedBlog = await prisma.blog.update({
+          where: { blogId },
+          data: {
+            title,
+            author,
+            ...(newThumbnail && { thumbnail: newThumbnail }),
+            content: parsedContent,
+          },
+        });
+  
+        res.json(updatedBlog);
+      } catch (error) {
+        console.error("PUT BLOG ERROR:", error);
+        res.status(500).json({ message: "Failed to update blog", error: error.message });
+      }
+    }
+  
 module.exports = {
     addBlogs,
     getBlogsByPagination,
     postAndGetBlogsByPagination,
     getBlogsById,
     getBlogsByIdWithSimilar,
-    deleteBlogsById
+    deleteBlogsById,
+    updateBlogs
 }

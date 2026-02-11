@@ -4,20 +4,28 @@ const videoRoutes = require("./src/routes/videoRoutes")
 const shortRoutes = require("./src/routes/shortRoutes")
 const guestRoutes = require("./src/routes/guestRoutes")
 const blogsRoutes = require("./src/routes/blogsRoutes")
+const cors = require('cors')
+const dotenv = require('dotenv')
 const app = express();
 const cookieParser = require('cookie-parser')
-
-app.use(cors({
-    credentials: true
-  }));
-app.use(express.json());
+dotenv.config();
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://valleyinthemaking.netlify.app"
+    ],
+    credentials: true,
+  })
+);
+app.use(express.json())
 app.use(cookieParser())
 
-app.use("/api/auth",authRoutes)
-app.use("/api/shorts",shortRoutes)
-app.use("/api/video",videoRoutes)
-app.use("/api/manage-guest",guestRoutes)
-app.use("/api/blogs",blogsRoutes)
+app.use("/api",authRoutes)
+app.use("/api",shortRoutes)
+app.use("/api",videoRoutes)
+app.use("/api",guestRoutes)
+app.use("/api",blogsRoutes)
 
 const PORT = 5000;
 app.listen(PORT, () => {

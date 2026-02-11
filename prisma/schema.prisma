@@ -11,6 +11,17 @@ datasource db {
   // directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
+model PodcastFormSubmission {
+  submissionId         string   @id @unique @default(cuid())
+  fullName             String
+  emailAddress         String
+  phoneNumber          String
+  linkedInPortfolio    String?
+  connectionPreference String   // e.g. "audience_share_thoughts" or "other_option"
+  storyOrTopic         String?
+  createdAt            DateTime @default(now())
+}
+
 
 model User {
   userId      String   @id @unique @default(cuid())

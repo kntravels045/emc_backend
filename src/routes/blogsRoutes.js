@@ -1,17 +1,26 @@
 const express = require("express")
 const router = express.Router()
 const blogsControllers = require("../controllers/blogsControllers")
+const upload = require("../../multer")
+const authenticateToken = require("../middleware/authMiddleware")
 
 
-
-router.post("/api/add-blogs",upload.fields([
+router.post("/add-blogs",upload.fields([
       { name: "thumbnail", maxCount: 1 },
       { name: "images", maxCount: 50 },]),blogsControllers.addBlogs) 
-router.get("/api/blogs", blogsControllers.getBlogsByPagination)
-router.post("/api/blogs",blogsControllers.postAndGetBlogsByPagination)
-router.get("/api/blogs/:blogId",blogsControllers.getBlogsById)   
-router.get("/api/blogs/:blogId/similar",blogsControllers.getBlogsByIdWithSimilar )
-router.delete("/api/blogs/:blogId",blogsControllers.deleteBlogsById)
+router.get("/blogs", blogsControllers.getBlogsByPagination)
+router.post("/blogs",blogsControllers.postAndGetBlogsByPagination)
+router.get("/blogs/:blogId",blogsControllers.getBlogsById)   
+router.get("/blogs/:blogId/similar",blogsControllers.getBlogsByIdWithSimilar )
+router.delete("/blogs/:blogId",blogsControllers.deleteBlogsById)
 
+
+router.put(
+      "/blogs/:blogId",
+      authenticateToken,
+      upload.fields([
+        { name: "thumbnail", maxCount: 1 },
+        { name: "images", maxCount: 50 },
+      ]),blogsControllers.updateBlogs)
 
 module.exports = router
