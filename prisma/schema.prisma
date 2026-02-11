@@ -12,7 +12,7 @@ datasource db {
 }
 
 model PodcastFormSubmission {
-  submissionId         string   @id @unique @default(cuid())
+  submissionId         String   @id @unique @default(cuid())
   fullName             String
   emailAddress         String
   phoneNumber          String
