@@ -12,10 +12,10 @@ const contactForm = async (req, res) => {
         storyOrTopic,
       } = req.body;
   
-      // Basic validation (you can extend this)
-      if (!fullName || !emailAddress || !phoneNumber || !connectionPreference) {
-        return res.status(400).json({ message: 'Missing required fields' });
-      }
+    // Basic validation (you can extend this)
+    //   if (!fullName || !emailAddress || !phoneNumber || !connectionPreference) {
+    //     return res.status(400).json({ message: 'Missing required fields' });
+    //   }
   
       // Save to database
       const submission = await prisma.podcastFormSubmission.create({
