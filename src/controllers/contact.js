@@ -71,5 +71,27 @@ const contactForm = async (req, res) => {
     }
   };
   
+  const deletePodcastSubmission = async (req, res) => {
+    try {
+      const { submissionId } = req.params;
+  
+      await prisma.podcastFormSubmission.delete({
+        where: { submissionId },
+      });
+  
+      return res.status(200).json({
+        message: "Submission deleted successfully",
+      });
+  
+    } catch (error) {
+      if (error.code === "P2025") {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+  
+      console.error("Error deleting submission:", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  };
+  
 
-module.exports = {getContactDetails,contactForm}
+module.exports = {getContactDetails,contactForm,deletePodcastSubmission}
