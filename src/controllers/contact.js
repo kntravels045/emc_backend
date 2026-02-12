@@ -38,18 +38,38 @@ const contactForm = async (req, res) => {
 
   const getContactDetails = async (req, res) => {
     try {
-      // Fetch all podcast form submissions from the database
-      const submissions = await prisma.podcastFormSubmission.findMany();
+      const { page , limit } = req.query;
   
-      // Return the fetched data with a 200 OK status
-      return res.status(200).json({ submissions });
+      const pageNumber = parseInt(page);
+      const limitNumber = parseInt(limit);
+  
+      const skip = (pageNumber - 1) * limitNumber;
+  
+      // Get total count
+      const total = await prisma.podcastFormSubmission.count();
+  
+      // Fetch paginated data
+      const submissions = await prisma.podcastFormSubmission.findMany({
+        skip: skip,
+        take: limitNumber,
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+  
+      return res.status(200).json({
+        page: pageNumber,
+        limit: limitNumber,
+        total,
+        totalPages: Math.ceil(total / limitNumber),
+        submissions,
+      });
+  
     } catch (error) {
-      console.error('Error fetching contact details:', error);
-      return res.status(500).json({ message: 'Server error' });
+      console.error("Error fetching contact details:", error);
+      return res.status(500).json({ message: "Server error" });
     }
   };
   
-
-
 
 module.exports = {getContactDetails,contactForm}
