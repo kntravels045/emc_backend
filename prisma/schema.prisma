@@ -15,10 +15,10 @@ model PodcastFormSubmission {
   submissionId         String   @id @unique @default(cuid())
   fullName             String
   emailAddress         String
-  phoneNumber          String
+  phoneNumber          String?
   linkedInPortfolio    String?
-  connectionPreference String   // e.g. "audience_share_thoughts" or "other_option"
-  storyOrTopic         String?
+  connectionPreference String  // e.g. "audience_share_thoughts" or "other_option"
+  storyOrTopic         String
   createdAt            DateTime @default(now())
 }
 
